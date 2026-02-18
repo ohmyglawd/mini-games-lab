@@ -91,15 +91,19 @@
         background: rgba(15, 23, 42, .5);
       }
       #girlButton {
-        font-size: clamp(4rem, 14vw, 6.8rem);
-        line-height: 1;
+        width: min(300px, 75vw);
         background: transparent;
         border: none;
-        color: inherit;
         cursor: pointer;
         transition: transform .08s ease;
+        padding: 0;
       }
-      #girlButton:active { transform: scale(.95); }
+      #girlButton:active { transform: scale(.97); }
+      .girl-svg {
+        width: 100%;
+        height: auto;
+        filter: drop-shadow(0 10px 24px rgba(0,0,0,.35));
+      }
       #stageLabel { margin-top: 6px; color: var(--soft); }
       .hint { color: var(--soft); font-size: .9rem; margin-top: 8px; }
       .toast {
@@ -139,7 +143,7 @@
         </div>
 
         <div class="girl-wrap">
-          <button id="girlButton" aria-label="點擊少女加分">🌸</button>
+          <button id="girlButton" aria-label="點擊少女加分"></button>
           <p id="stageLabel">初始型態（0~10）</p>
           <p class="hint">點我一下 +1 分</p>
         </div>
@@ -166,10 +170,39 @@
       let timer = null;
 
       const STAGES = [
-        { min: 0, max: 10, emoji: "🌸", label: "初始型態（0~10）" },
-        { min: 11, max: 20, emoji: "🎀", label: "中階型態（11~20）" },
-        { min: 21, max: 30, emoji: "👑", label: "最終型態（21~30）" }
+        { min: 0, max: 10, style: "seed", label: "初始型態（0~10）" },
+        { min: 11, max: 20, style: "mid", label: "中階型態（11~20）" },
+        { min: 21, max: 30, style: "final", label: "最終型態（21~30）" }
       ];
+
+      function girlSvg(style) {
+        const hair = style === "final" ? "#c084fc" : style === "mid" ? "#f472b6" : "#60a5fa";
+        const bow = style === "final" ? "#facc15" : style === "mid" ? "#fb7185" : "#a78bfa";
+        const aura = style === "final" ? "#fde68a" : style === "mid" ? "#f9a8d4" : "#93c5fd";
+        return `
+          <svg class="girl-svg" viewBox="0 0 260 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="二次元可愛少女">
+            <defs>
+              <radialGradient id="bgAura" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="${aura}" stop-opacity="0.45"/>
+                <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="130" cy="150" rx="95" ry="110" fill="url(#bgAura)"/>
+            <path d="M68 120 C72 58, 188 58, 192 120 L192 205 C184 250, 76 250, 68 205 Z" fill="${hair}"/>
+            <circle cx="130" cy="145" r="52" fill="#fde7d7"/>
+            <circle cx="110" cy="142" r="11" fill="#1f2937"/>
+            <circle cx="151" cy="142" r="11" fill="#1f2937"/>
+            <circle cx="106" cy="138" r="3" fill="#fff"/>
+            <circle cx="147" cy="138" r="3" fill="#fff"/>
+            <path d="M112 169 Q130 183 148 169" stroke="#fb7185" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="95" cy="156" rx="9" ry="6" fill="#fda4af" opacity="0.75"/>
+            <ellipse cx="166" cy="156" rx="9" ry="6" fill="#fda4af" opacity="0.75"/>
+            <path d="M82 205 C100 188, 160 188, 178 205 L188 282 H72 Z" fill="#f8fafc"/>
+            <path d="M120 206 L140 206 L135 282 L125 282 Z" fill="${bow}" opacity="0.9"/>
+            <path d="M90 98 L70 82 L92 78 Z" fill="${bow}"/>
+            <path d="M170 98 L190 82 L168 78 Z" fill="${bow}"/>
+          </svg>`;
+      }
 
       function showScreen(screen) {
         menuScreen.classList.remove("active");
@@ -192,7 +225,7 @@
         const stage = getStage(state.score);
         scoreText.textContent = state.score;
         stageLabel.textContent = stage.label;
-        girlButton.textContent = stage.emoji;
+        girlButton.innerHTML = girlSvg(stage.style);
       }
 
       function saveGame(showMsg = false) {
