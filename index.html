@@ -3,46 +3,299 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Games Lab</title>
+    <title>可愛少女放置遊戲 v0.1</title>
     <style>
-      :root { color-scheme: dark; }
+      :root {
+        color-scheme: dark;
+        --bg1: #1f1147;
+        --bg2: #0f172a;
+        --card: rgba(26, 32, 64, 0.78);
+        --line: #475569;
+        --text: #f8fafc;
+        --soft: #cbd5e1;
+        --pink: #f472b6;
+        --pink2: #ec4899;
+        --mint: #34d399;
+      }
       * { box-sizing: border-box; }
       body {
         margin: 0;
         min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background: radial-gradient(circle at top, #1f2937, #0b1020 60%);
-        color: #e5e7eb;
-        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        font-family: "Noto Sans TC", Inter, system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top, var(--bg1), var(--bg2) 60%);
+        color: var(--text);
       }
-      .card {
-        width: min(680px, 92vw);
-        padding: 32px;
-        border: 1px solid #374151;
-        border-radius: 16px;
-        background: rgba(17, 24, 39, 0.75);
-        backdrop-filter: blur(4px);
+      .screen {
+        min-height: 100vh;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
       }
-      h1 { margin: 0 0 10px; font-size: 2rem; }
-      p { margin: 8px 0; line-height: 1.6; color: #cbd5e1; }
-      .badge {
-        display: inline-block;
-        margin-top: 12px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: #0ea5e9;
-        color: #06283d;
+      .screen.active { display: flex; }
+      .panel {
+        width: min(760px, 94vw);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      }
+      h1, h2, p { margin: 0; }
+      .title { font-size: clamp(1.7rem, 3vw, 2.2rem); margin-bottom: 12px; }
+      .sub { color: var(--soft); margin-bottom: 18px; line-height: 1.6; }
+      .menu-buttons, .row { display: grid; gap: 12px; }
+      .menu-buttons { margin-top: 14px; }
+      button {
+        border: none;
+        border-radius: 14px;
+        padding: 12px 16px;
+        font-size: 1rem;
         font-weight: 700;
+        color: #071021;
+        background: linear-gradient(135deg, var(--pink), var(--pink2));
+        cursor: pointer;
       }
+      button.alt { background: #334155; color: var(--text); }
+      button.good { background: linear-gradient(135deg, #6ee7b7, var(--mint)); }
+      button:disabled { opacity: .45; cursor: not-allowed; }
+      .game-grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 1fr;
+      }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        background: rgba(15, 23, 42, .88);
+        border: 1px solid #334155;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: .92rem;
+      }
+      .girl-wrap {
+        text-align: center;
+        border: 1px dashed #64748b;
+        border-radius: 18px;
+        padding: 16px;
+        background: rgba(15, 23, 42, .5);
+      }
+      #girlButton {
+        font-size: clamp(4rem, 14vw, 6.8rem);
+        line-height: 1;
+        background: transparent;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        transition: transform .08s ease;
+      }
+      #girlButton:active { transform: scale(.95); }
+      #stageLabel { margin-top: 6px; color: var(--soft); }
+      .hint { color: var(--soft); font-size: .9rem; margin-top: 8px; }
+      .toast {
+        margin-top: 10px;
+        color: #0f172a;
+        background: #fef08a;
+        border-radius: 10px;
+        padding: 8px 10px;
+        display: none;
+      }
+      .toast.show { display: inline-block; }
     </style>
   </head>
   <body>
-    <main class="card">
-      <h1>🎮 Mini Games Lab</h1>
-      <p>這是一個空白起始頁，準備和大家一起迭代簡易版手遊。</p>
-      <p>下一步可加：遊戲選單、排行榜、存檔、每日挑戰。</p>
-      <span class="badge">v0.0.1 bootstrap</span>
-    </main>
+    <section id="menuScreen" class="screen active">
+      <div class="panel">
+        <h1 class="title">🎮 可愛少女放置遊戲</h1>
+        <p class="sub">單機版原型：每分鐘自動 +1 分，也可手動點擊少女 +1 分。</p>
+        <div class="menu-buttons">
+          <button id="newGameBtn" class="good">新遊戲</button>
+          <button id="loadGameBtn">讀取遊戲</button>
+          <button id="exitBtn" class="alt">退出遊戲</button>
+        </div>
+        <p class="hint">提示：會自動存檔在本機瀏覽器（localStorage）。</p>
+        <p id="menuToast" class="toast"></p>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="panel game-grid">
+        <div class="topbar">
+          <h2>💖 少女養成中</h2>
+          <div class="stats">
+            <span class="chip">積分：<strong id="scoreText">0</strong></span>
+            <span class="chip">自動加分：每分鐘 +1</span>
+          </div>
+        </div>
+
+        <div class="girl-wrap">
+          <button id="girlButton" aria-label="點擊少女加分">🌸</button>
+          <p id="stageLabel">初始型態（0~10）</p>
+          <p class="hint">點我一下 +1 分</p>
+        </div>
+
+        <div class="row">
+          <button id="saveBtn" class="good">手動存檔</button>
+          <button id="backBtn" class="alt">返回主選單</button>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const SAVE_KEY = "mini_games_idle_girl_save_v1";
+      const AUTO_GAIN_MS = 60_000;
+
+      const menuScreen = document.getElementById("menuScreen");
+      const gameScreen = document.getElementById("gameScreen");
+      const scoreText = document.getElementById("scoreText");
+      const stageLabel = document.getElementById("stageLabel");
+      const girlButton = document.getElementById("girlButton");
+      const menuToast = document.getElementById("menuToast");
+
+      let state = { score: 0, updatedAt: Date.now() };
+      let timer = null;
+
+      const STAGES = [
+        { min: 0, max: 10, emoji: "🌸", label: "初始型態（0~10）" },
+        { min: 11, max: 20, emoji: "🎀", label: "中階型態（11~20）" },
+        { min: 21, max: 30, emoji: "👑", label: "最終型態（21~30）" }
+      ];
+
+      function showScreen(screen) {
+        menuScreen.classList.remove("active");
+        gameScreen.classList.remove("active");
+        screen.classList.add("active");
+      }
+
+      function getStage(score) {
+        if (score >= 21) return STAGES[2];
+        if (score >= 11) return STAGES[1];
+        return STAGES[0];
+      }
+
+      function clampScore(score) {
+        return Math.max(0, Math.min(30, score));
+      }
+
+      function render() {
+        state.score = clampScore(state.score);
+        const stage = getStage(state.score);
+        scoreText.textContent = state.score;
+        stageLabel.textContent = stage.label;
+        girlButton.textContent = stage.emoji;
+      }
+
+      function saveGame(showMsg = false) {
+        state.updatedAt = Date.now();
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        if (showMsg) toast("已存檔 ✨");
+      }
+
+      function loadGame() {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        try {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed.score !== "number") return null;
+          return {
+            score: clampScore(parsed.score),
+            updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : Date.now()
+          };
+        } catch {
+          return null;
+        }
+      }
+
+      function applyOfflineGain() {
+        const now = Date.now();
+        const elapsed = now - state.updatedAt;
+        if (elapsed <= 0) return;
+        const gain = Math.floor(elapsed / AUTO_GAIN_MS);
+        if (gain > 0) state.score = clampScore(state.score + gain);
+        state.updatedAt = now;
+      }
+
+      function startGameLoop() {
+        stopGameLoop();
+        timer = setInterval(() => {
+          state.score = clampScore(state.score + 1);
+          render();
+          saveGame(false);
+        }, AUTO_GAIN_MS);
+      }
+
+      function stopGameLoop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      function toast(msg) {
+        menuToast.textContent = msg;
+        menuToast.classList.add("show");
+        clearTimeout(toast._t);
+        toast._t = setTimeout(() => menuToast.classList.remove("show"), 1800);
+      }
+
+      function enterGame(fromLoad = false) {
+        if (fromLoad) applyOfflineGain();
+        render();
+        showScreen(gameScreen);
+        startGameLoop();
+      }
+
+      document.getElementById("newGameBtn").addEventListener("click", () => {
+        state = { score: 0, updatedAt: Date.now() };
+        saveGame(false);
+        document.getElementById("loadGameBtn").disabled = false;
+        enterGame(false);
+      });
+
+      document.getElementById("loadGameBtn").addEventListener("click", () => {
+        const loaded = loadGame();
+        if (!loaded) {
+          toast("找不到存檔，請先建立新遊戲～");
+          return;
+        }
+        state = loaded;
+        enterGame(true);
+      });
+
+      document.getElementById("exitBtn").addEventListener("click", () => {
+        toast("已退出（目前網頁版無法直接關閉分頁）");
+      });
+
+      girlButton.addEventListener("click", () => {
+        state.score = clampScore(state.score + 1);
+        render();
+        saveGame(false);
+      });
+
+      document.getElementById("saveBtn").addEventListener("click", () => saveGame(true));
+
+      document.getElementById("backBtn").addEventListener("click", () => {
+        saveGame(false);
+        stopGameLoop();
+        showScreen(menuScreen);
+      });
+
+      // 初始 UI
+      render();
+      if (!loadGame()) {
+        document.getElementById("loadGameBtn").disabled = true;
+      }
+      window.addEventListener("beforeunload", () => saveGame(false));
+    </script>
   </body>
 </html>
