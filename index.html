@@ -194,9 +194,27 @@
       let timer = null;
 
       const STAGES = [
-        { min: 0, max: 10, style: "seed", label: "初始型態（0~10）" },
-        { min: 11, max: 20, style: "mid", label: "中階型態（11~20）" },
-        { min: 21, max: 30, style: "final", label: "最終型態（21~30）" }
+        {
+          min: 0,
+          max: 10,
+          style: "seed",
+          label: "初始型態（0~10）",
+          image: "https://image.pollinations.ai/prompt/anime%20style%20original%20character%2C%20cute%20purple-haired%20young%20mage%20girl%2C%20full%20body%2C%20white%20dress%2C%20black%20cloak%2C%20holding%20staff%2C%20clean%20background%2C%20high%20quality%20illustration?width=768&height=1024&seed=1101&nologo=true"
+        },
+        {
+          min: 11,
+          max: 20,
+          style: "mid",
+          label: "中階型態（11~20）",
+          image: "https://image.pollinations.ai/prompt/anime%20style%20original%20character%2C%20beautiful%20purple-haired%20mage%20girl%2C%20full%20body%2C%20white%20and%20purple%20robe%2C%20holding%20staff%2C%20magic%20circles%2C%20clean%20background%2C%20high%20quality%20illustration?width=768&height=1024&seed=2202&nologo=true"
+        },
+        {
+          min: 21,
+          max: 30,
+          style: "final",
+          label: "最終型態（21~30）",
+          image: "https://image.pollinations.ai/prompt/anime%20style%20original%20character%2C%20epic%20purple-haired%20archmage%20girl%2C%20full%20body%2C%20elegant%20white%20black%20purple%20cloak%2C%20ornate%20staff%2C%20glowing%20magic%20circles%2C%20clean%20background%2C%20masterpiece%20illustration?width=768&height=1024&seed=3303&nologo=true"
+        }
       ];
 
       function girlSvg(style) {
@@ -279,7 +297,16 @@
         const stage = getStage(state.score);
         scoreText.textContent = state.score;
         stageLabel.textContent = stage.label;
-        girlButton.innerHTML = girlSvg(stage.style);
+
+        girlButton.innerHTML = `
+          <img
+            class="girl-svg"
+            src="${stage.image}"
+            alt="紫髮法師風少女立繪"
+            loading="eager"
+            referrerpolicy="no-referrer"
+            onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', ${JSON.stringify(girlSvg(stage.style))})"
+          />`;
       }
 
       function saveGame(showMsg = false) {
