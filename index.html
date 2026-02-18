@@ -298,15 +298,22 @@
         scoreText.textContent = state.score;
         stageLabel.textContent = stage.label;
 
-        girlButton.innerHTML = `
-          <img
-            class="girl-svg"
-            src="${stage.image}"
-            alt="紫髮法師風少女立繪"
-            loading="eager"
-            referrerpolicy="no-referrer"
-            onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', ${JSON.stringify(girlSvg(stage.style))})"
-          />`;
+        // 先清空，改用 JS 事件處理載圖失敗，避免 inline onerror 字串轉義問題。
+        girlButton.innerHTML = "";
+
+        const fallbackSvg = girlSvg(stage.style);
+        const img = document.createElement("img");
+        img.className = "girl-svg";
+        img.src = stage.image;
+        img.alt = "紫髮法師風少女立繪";
+        img.loading = "eager";
+        img.referrerPolicy = "no-referrer";
+
+        img.addEventListener("error", () => {
+          girlButton.innerHTML = fallbackSvg;
+        });
+
+        girlButton.appendChild(img);
       }
 
       function saveGame(showMsg = false) {
