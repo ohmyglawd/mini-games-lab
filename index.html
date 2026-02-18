@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Games Lab</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #1f2937, #0b1020 60%);
+        color: #e5e7eb;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      .card {
+        width: min(680px, 92vw);
+        padding: 32px;
+        border: 1px solid #374151;
+        border-radius: 16px;
+        background: rgba(17, 24, 39, 0.75);
+        backdrop-filter: blur(4px);
+      }
+      h1 { margin: 0 0 10px; font-size: 2rem; }
+      p { margin: 8px 0; line-height: 1.6; color: #cbd5e1; }
+      .badge {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #0ea5e9;
+        color: #06283d;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>🎮 Mini Games Lab</h1>
+      <p>這是一個空白起始頁，準備和大家一起迭代簡易版手遊。</p>
+      <p>下一步可加：遊戲選單、排行榜、存檔、每日挑戰。</p>
+      <span class="badge">v0.0.1 bootstrap</span>
+    </main>
+  </body>
+</html>
