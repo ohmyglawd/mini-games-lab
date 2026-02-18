@@ -105,6 +105,8 @@
       #girlButton:active { transform: scale(.97); }
       .girl-svg {
         width: 100%;
+        max-height: 560px;
+        object-fit: contain;
         height: auto;
         filter: drop-shadow(0 12px 24px rgba(0,0,0,.35));
       }
@@ -202,21 +204,21 @@
           max: 10,
           style: "seed",
           label: "初始型態（0~10）",
-          image: "./assets/mage-base.jpg"
+          image: "./assets/mage-base.png"
         },
         {
           min: 11,
           max: 20,
           style: "mid",
           label: "中階型態（11~20）",
-          image: "./assets/mage-mid.jpg"
+          image: "./assets/mage-mid.png"
         },
         {
           min: 21,
           max: 30,
           style: "final",
           label: "最終型態（21~30）",
-          image: "./assets/mage-final.jpg"
+          image: "./assets/mage-final.png"
         }
       ];
 
