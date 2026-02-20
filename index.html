@@ -1,454 +1,77 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>可愛少女放置遊戲 v0.1</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg1: #2d1464;
-        --bg2: #0a1330;
-        --card: rgba(18, 26, 66, 0.86);
-        --line: #5b6fb8;
-        --text: #f8fbff;
-        --soft: #c8d4ff;
-        --pink: #ff88c2;
-        --pink2: #b993ff;
-        --mint: #6be3c1;
-        --gold: #f8d477;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Noto Sans TC", "Hiragino Sans", "Yu Gothic UI", Inter, system-ui, -apple-system, sans-serif;
-        background:
-          radial-gradient(1200px 700px at 20% -10%, rgba(255, 158, 226, .22), transparent 55%),
-          radial-gradient(900px 600px at 90% -15%, rgba(141, 214, 255, .25), transparent 52%),
-          radial-gradient(circle at top, var(--bg1), var(--bg2) 62%);
-        color: var(--text);
-      }
-      .screen {
-        min-height: 100vh;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-      }
-      .screen.active { display: flex; }
-      .panel {
-        width: min(820px, 94vw);
-        background:
-          linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)) ,
-          var(--card);
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        padding: 24px;
-        box-shadow: 0 20px 56px rgba(5, 8, 24, .5), inset 0 1px 0 rgba(255,255,255,.16);
-      }
-      h1, h2, p { margin: 0; }
-      .title { font-size: clamp(1.7rem, 3vw, 2.2rem); margin-bottom: 12px; }
-      .sub { color: var(--soft); margin-bottom: 18px; line-height: 1.6; }
-      .menu-buttons, .row { display: grid; gap: 12px; }
-      .menu-buttons { margin-top: 14px; }
-      button {
-        border: none;
-        border-radius: 14px;
-        padding: 12px 16px;
-        font-size: 1rem;
-        font-weight: 800;
-        color: #061022;
-        background: linear-gradient(135deg, var(--pink), var(--pink2));
-        cursor: pointer;
-        letter-spacing: .02em;
-        box-shadow: 0 8px 24px rgba(158, 111, 255, .25), inset 0 1px 0 rgba(255,255,255,.4);
-      }
-      button.alt { background: linear-gradient(135deg, #41557d, #334155); color: var(--text); }
-      button.good { background: linear-gradient(135deg, #86efcf, var(--mint)); }
-      button:disabled { opacity: .45; cursor: not-allowed; }
-      .game-grid {
-        display: grid;
-        gap: 18px;
-        grid-template-columns: 1fr;
-      }
-      .topbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .stats {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .chip {
-        background: rgba(9, 17, 42, .82);
-        border: 1px solid #5466a5;
-        border-radius: 999px;
-        padding: 8px 12px;
-        font-size: .92rem;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
-      }
-      .girl-wrap {
-        position: relative;
-        text-align: center;
-        border: 1px dashed #6981c8;
-        border-radius: 18px;
-        padding: 16px;
-        background:
-          radial-gradient(200px 120px at 50% 4%, rgba(255,255,255,.08), transparent),
-          rgba(12, 22, 56, .58);
-        overflow: hidden;
-      }
-      #girlButton {
-        width: min(360px, 82vw);
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        transition: transform .08s ease;
-        padding: 0;
-        position: relative;
-        z-index: 2;
-      }
-      #girlButton:active { transform: scale(.97); }
-      .girl-svg {
-        width: 100%;
-        max-height: 560px;
-        object-fit: contain;
-        height: auto;
-        filter: drop-shadow(0 12px 24px rgba(0,0,0,.35));
-      }
-      .girl-svg.seed { filter: drop-shadow(0 12px 24px rgba(0,0,0,.35)) saturate(0.95); }
-      .girl-svg.mid { filter: drop-shadow(0 12px 24px rgba(0,0,0,.35)) saturate(1.1) contrast(1.05); }
-      .girl-svg.final { filter: drop-shadow(0 12px 24px rgba(0,0,0,.35)) saturate(1.18) contrast(1.08) brightness(1.04); }
-      #sparkles {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 3;
-      }
-      .spark {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #fde68a;
-        animation: pop 700ms ease-out forwards;
-      }
-      @keyframes pop {
-        0% { transform: translate(0,0) scale(0.3); opacity: 1; }
-        100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
-      }
-      #stageLabel { margin-top: 6px; color: var(--soft); }
-      .hint { color: var(--soft); font-size: .9rem; margin-top: 8px; }
-      .toast {
-        margin-top: 10px;
-        color: #0f172a;
-        background: #fef08a;
-        border-radius: 10px;
-        padding: 8px 10px;
-        display: none;
-      }
-      .toast.show { display: inline-block; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>點擊英雄 3D - 可擴充架構版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="./src/styles.css" />
   </head>
-  <body>
-    <section id="menuScreen" class="screen active">
-      <div class="panel">
-        <h1 class="title">🎮 魔法少女育成計畫</h1>
-        <p class="sub">日系手遊風 UI 版：每分鐘自動 +1 分，也可手動點擊角色 +1 分。</p>
-        <div class="menu-buttons">
-          <button id="newGameBtn" class="good">新遊戲</button>
-          <button id="loadGameBtn">讀取遊戲</button>
-          <button id="exitBtn" class="alt">退出遊戲</button>
+  <body class="flex flex-col h-screen w-full relative">
+    <header class="bg-gray-800 p-3 shadow-md z-20 flex flex-col gap-2">
+      <div class="flex justify-between items-center">
+        <div class="text-xl font-bold text-yellow-400 flex items-center gap-1">💰 <span id="ui-gold">0</span></div>
+        <div class="flex items-center gap-2">
+          <span id="ui-save-status" class="text-[10px] text-gray-500 font-normal">初始化中...</span>
+          <button id="btn-reset" class="text-[10px] bg-red-900 text-red-200 px-2 py-1 rounded hover:bg-red-800 transition-colors">重置存檔</button>
+          <div class="text-lg font-bold bg-gray-700 px-3 py-1 rounded-full">關卡 <span id="ui-level">1</span></div>
         </div>
-        <p class="hint">提示：會自動存檔在本機瀏覽器（localStorage）。</p>
-        <p id="menuToast" class="toast"></p>
       </div>
-    </section>
 
-    <section id="gameScreen" class="screen">
-      <div class="panel game-grid">
-        <div class="topbar">
-          <h2>✨ SSR 魔法少女養成中</h2>
-          <div class="stats">
-            <span class="chip">積分：<strong id="scoreText">0</strong></span>
-            <span class="chip">自動加分：每分鐘 +1</span>
+      <div class="flex justify-between text-sm text-gray-300">
+        <div>點擊傷害: <span id="ui-click-damage" class="text-white font-bold">1</span></div>
+        <div>DPS (秒傷): <span id="ui-dps" class="text-white font-bold">0</span></div>
+      </div>
+
+      <div class="flex justify-between items-center bg-gray-900 rounded px-2 py-1 border border-purple-800">
+        <div class="text-sm font-bold text-purple-400 flex items-center gap-1">👻 英雄魂: <span id="ui-souls">0</span></div>
+        <div class="text-xs text-green-400">全局傷害 +<span id="ui-souls-bonus">0</span>%</div>
+      </div>
+
+      <div class="mt-1">
+        <div class="flex justify-between text-xs mb-1">
+          <span id="ui-monster-name" class="font-bold">載入中...</span>
+          <span>擊殺: <span id="ui-kills">0</span>/10</span>
+        </div>
+        <div class="w-full h-4 bg-gray-900 rounded-full overflow-hidden border border-gray-600 relative">
+          <div id="ui-hp-bar" class="h-full bg-red-500 transition-all duration-100" style="width: 100%"></div>
+          <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">
+            <span id="ui-hp-text">0 / 0</span>
           </div>
         </div>
-
-        <div class="girl-wrap">
-          <div id="sparkles"></div>
-          <button id="girlButton" aria-label="點擊少女加分"></button>
-          <p id="stageLabel">初始型態（0~10）</p>
-          <p class="hint">點我一下 +1 分</p>
-        </div>
-
-        <div class="row">
-          <button id="saveBtn" class="good">手動存檔</button>
-          <button id="backBtn" class="alt">返回主選單</button>
-        </div>
       </div>
-    </section>
+    </header>
 
-    <script>
-      const SAVE_KEY = "mini_games_idle_girl_save_v1";
-      const AUTO_GAIN_MS = 60_000;
+    <main class="flex-1 relative bg-gray-900 overflow-hidden" id="canvas-container">
+      <div id="click-zone" class="absolute inset-0 z-10 cursor-pointer touch-manipulation"></div>
+    </main>
 
-      const menuScreen = document.getElementById("menuScreen");
-      const gameScreen = document.getElementById("gameScreen");
-      const scoreText = document.getElementById("scoreText");
-      const stageLabel = document.getElementById("stageLabel");
-      const girlButton = document.getElementById("girlButton");
-      const menuToast = document.getElementById("menuToast");
-      const sparkles = document.getElementById("sparkles");
+    <footer class="h-2/5 md:h-1/2 bg-gray-800 border-t border-gray-700 flex flex-col relative z-20">
+      <div class="bg-gray-700 flex justify-between items-center px-4 py-2 font-bold text-sm text-gray-300 shadow-sm z-10">
+        <span>招募英雄與升級</span>
+        <button id="btn-prestige" class="prestige-btn bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded-md text-xs border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all opacity-50 grayscale">
+          ✨ 轉生 (可獲 <span id="ui-pending-souls">0</span> 魂)
+        </button>
+      </div>
+      <div id="heroes-container" class="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2 pb-6"></div>
+    </footer>
 
-      let state = { score: 0, updatedAt: Date.now() };
-      let timer = null;
+    <div id="offline-modal" class="hidden absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+      <div class="bg-gray-800 border-2 border-yellow-500 rounded-2xl p-6 flex flex-col items-center max-w-sm w-full shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+        <div class="text-4xl mb-2">🌙</div>
+        <h2 class="text-2xl font-bold text-yellow-400 mb-1">歡迎回來！</h2>
+        <p class="text-gray-300 text-sm mb-6 text-center">您的英雄在離線期間持續戰鬥！</p>
+        <div class="bg-gray-900 w-full rounded-lg p-4 mb-6 border border-gray-700">
+          <div class="flex justify-between mb-2"><span class="text-gray-400 text-sm">離線時間：</span><span id="offline-time-text" class="text-white font-bold text-sm">0 秒</span></div>
+          <div class="flex justify-between mb-2"><span class="text-gray-400 text-sm">擊殺怪物：</span><span id="offline-kills-text" class="text-white font-bold text-sm">0 隻</span></div>
+          <div class="w-full h-px bg-gray-700 my-2"></div>
+          <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">離線收益：</span><span class="text-yellow-400 font-bold text-lg">💰 <span id="offline-gold-text">0</span></span></div>
+        </div>
+        <button id="btn-offline-claim" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 rounded-xl transition-colors text-lg">領取收益</button>
+      </div>
+    </div>
 
-      const STAGES = [
-        {
-          min: 0,
-          max: 10,
-          style: "seed",
-          label: "初始型態（0~10）",
-          image: "./assets/mage-base.png"
-        },
-        {
-          min: 11,
-          max: 20,
-          style: "mid",
-          label: "中階型態（11~20）",
-          image: "./assets/mage-mid.png"
-        },
-        {
-          min: 21,
-          max: 30,
-          style: "final",
-          label: "最終型態（21~30）",
-          image: "./assets/mage-final.png"
-        }
-      ];
-
-      function girlSvg(style) {
-        // 原創：參考你給的「紫髮法師少女」氣質，做成更接近日系手遊立繪感。
-        const hair = style === "final" ? "#7e3af2" : style === "mid" ? "#8b5cf6" : "#9f7aea";
-        const robeDark = style === "final" ? "#1f2434" : style === "mid" ? "#252c3d" : "#2d3347";
-        const robeLight = style === "final" ? "#f8fafc" : style === "mid" ? "#f1f5f9" : "#e2e8f0";
-        const glow = style === "final" ? "#7dd3fc" : style === "mid" ? "#93c5fd" : "#bae6fd";
-
-        return `
-          <svg class="girl-svg" viewBox="0 0 320 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="二次元紫髮法師少女">
-            <defs>
-              <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="${glow}" stop-opacity="0.45"/>
-                <stop offset="100%" stop-color="#000" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="hairGrad" x1="0" x2="1">
-                <stop offset="0%" stop-color="#a78bfa"/>
-                <stop offset="100%" stop-color="${hair}"/>
-              </linearGradient>
-            </defs>
-
-            <circle cx="230" cy="120" r="78" fill="url(#ringGlow)" opacity="0.8"/>
-            <circle cx="94" cy="170" r="56" fill="url(#ringGlow)" opacity="0.45"/>
-            <ellipse cx="160" cy="365" rx="92" ry="18" fill="#67e8f9" opacity="0.35"/>
-
-            <path d="M56 156 Q138 136 204 202" stroke="#7dd3fc" stroke-width="8" fill="none" stroke-linecap="round" opacity="0.8"/>
-            <path d="M220 110 Q260 130 288 180" stroke="#7dd3fc" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.65"/>
-
-            <path d="M66 206 L184 152" stroke="#6b4f3f" stroke-width="12" stroke-linecap="round"/>
-            <path d="M56 214 L175 160" stroke="#7c5f4b" stroke-width="7" stroke-linecap="round"/>
-            <path d="M48 213 L67 198 L70 223 Z" fill="#9a7a57"/>
-
-            <path d="M122 124 Q110 56 171 50 Q232 56 226 138 Q218 188 180 205 Q142 210 122 124Z" fill="url(#hairGrad)"/>
-            <path d="M143 110 Q181 91 211 112 Q220 140 210 174 Q186 198 154 192 Q130 170 143 110Z" fill="#fbe4d5"/>
-
-            <ellipse cx="166" cy="146" rx="11" ry="8" fill="#6d28d9"/>
-            <ellipse cx="195" cy="144" rx="11" ry="8" fill="#6d28d9"/>
-            <circle cx="162" cy="143" r="2.6" fill="#fff"/>
-            <circle cx="191" cy="141" r="2.6" fill="#fff"/>
-            <path d="M168 166 Q180 174 192 166" stroke="#fb7185" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-
-            <path d="M122 120 Q104 147 98 183 Q112 175 125 158 Z" fill="url(#hairGrad)"/>
-            <path d="M220 132 Q252 157 259 198 Q230 187 212 164 Z" fill="url(#hairGrad)"/>
-
-            <path d="M110 207 Q163 188 212 208 L242 326 Q195 362 116 344 L104 303 Z" fill="${robeDark}"/>
-            <path d="M138 218 Q167 204 197 219 L214 334 Q181 356 136 348 L129 320 Z" fill="${robeLight}"/>
-
-            <path d="M124 221 Q110 250 103 278 Q117 272 128 255 Z" fill="#dbeafe"/>
-            <path d="M211 225 Q227 247 238 278 Q219 272 203 252 Z" fill="#c7d2fe"/>
-
-            <path d="M146 336 L160 386 L145 390 L132 342 Z" fill="#0f172a"/>
-            <path d="M193 335 L206 385 L221 380 L207 338 Z" fill="#0f172a"/>
-            <ellipse cx="146" cy="390" rx="15" ry="8" fill="#111827"/>
-            <ellipse cx="220" cy="380" rx="15" ry="8" fill="#111827"/>
-
-            <circle cx="119" cy="182" r="7" fill="#dbeafe"/>
-            <circle cx="118" cy="182" r="3" fill="#7c3aed"/>
-          </svg>`;
-      }
-
-      function showScreen(screen) {
-        menuScreen.classList.remove("active");
-        gameScreen.classList.remove("active");
-        screen.classList.add("active");
-      }
-
-      function getStage(score) {
-        if (score >= 21) return STAGES[2];
-        if (score >= 11) return STAGES[1];
-        return STAGES[0];
-      }
-
-      function clampScore(score) {
-        return Math.max(0, Math.min(30, score));
-      }
-
-      function render() {
-        state.score = clampScore(state.score);
-        const stage = getStage(state.score);
-        scoreText.textContent = state.score;
-        stageLabel.textContent = stage.label;
-
-        // 先清空，改用 JS 事件處理載圖失敗，避免 inline onerror 字串轉義問題。
-        girlButton.innerHTML = "";
-
-        const fallbackSvg = girlSvg(stage.style);
-        const img = document.createElement("img");
-        img.className = `girl-svg ${stage.style}`;
-        img.src = stage.image;
-        img.alt = "紫髮法師風少女立繪";
-        img.loading = "eager";
-        img.referrerPolicy = "no-referrer";
-
-        img.addEventListener("error", () => {
-          girlButton.innerHTML = fallbackSvg;
-        });
-
-        girlButton.appendChild(img);
-      }
-
-      function saveGame(showMsg = false) {
-        state.updatedAt = Date.now();
-        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-        if (showMsg) toast("已存檔 ✨");
-      }
-
-      function loadGame() {
-        const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return null;
-        try {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed.score !== "number") return null;
-          return {
-            score: clampScore(parsed.score),
-            updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : Date.now()
-          };
-        } catch {
-          return null;
-        }
-      }
-
-      function applyOfflineGain() {
-        const now = Date.now();
-        const elapsed = now - state.updatedAt;
-        if (elapsed <= 0) return;
-        const gain = Math.floor(elapsed / AUTO_GAIN_MS);
-        if (gain > 0) state.score = clampScore(state.score + gain);
-        state.updatedAt = now;
-      }
-
-      function startGameLoop() {
-        stopGameLoop();
-        timer = setInterval(() => {
-          state.score = clampScore(state.score + 1);
-          render();
-          saveGame(false);
-        }, AUTO_GAIN_MS);
-      }
-
-      function stopGameLoop() {
-        if (timer) {
-          clearInterval(timer);
-          timer = null;
-        }
-      }
-
-      function toast(msg) {
-        menuToast.textContent = msg;
-        menuToast.classList.add("show");
-        clearTimeout(toast._t);
-        toast._t = setTimeout(() => menuToast.classList.remove("show"), 1800);
-      }
-
-      function burstSparkles() {
-        const colors = ["#fde68a", "#ddd6fe", "#f9a8d4", "#93c5fd"];
-        for (let i = 0; i < 9; i++) {
-          const s = document.createElement("span");
-          s.className = "spark";
-          s.style.left = `${45 + Math.random() * 10}%`;
-          s.style.top = `${45 + Math.random() * 10}%`;
-          s.style.setProperty("--dx", `${(Math.random() - 0.5) * 110}px`);
-          s.style.setProperty("--dy", `${(Math.random() - 0.5) * 120}px`);
-          s.style.background = colors[Math.floor(Math.random() * colors.length)];
-          sparkles.appendChild(s);
-          setTimeout(() => s.remove(), 720);
-        }
-      }
-
-      function enterGame(fromLoad = false) {
-        if (fromLoad) applyOfflineGain();
-        render();
-        showScreen(gameScreen);
-        startGameLoop();
-      }
-
-      document.getElementById("newGameBtn").addEventListener("click", () => {
-        state = { score: 0, updatedAt: Date.now() };
-        saveGame(false);
-        document.getElementById("loadGameBtn").disabled = false;
-        enterGame(false);
-      });
-
-      document.getElementById("loadGameBtn").addEventListener("click", () => {
-        const loaded = loadGame();
-        if (!loaded) {
-          toast("找不到存檔，請先建立新遊戲～");
-          return;
-        }
-        state = loaded;
-        enterGame(true);
-      });
-
-      document.getElementById("exitBtn").addEventListener("click", () => {
-        toast("已退出（目前網頁版無法直接關閉分頁）");
-      });
-
-      girlButton.addEventListener("click", () => {
-        state.score = clampScore(state.score + 1);
-        render();
-        burstSparkles();
-        saveGame(false);
-      });
-
-      document.getElementById("saveBtn").addEventListener("click", () => saveGame(true));
-
-      document.getElementById("backBtn").addEventListener("click", () => {
-        saveGame(false);
-        stopGameLoop();
-        showScreen(menuScreen);
-      });
-
-      // 初始 UI
-      render();
-      if (!loadGame()) {
-        document.getElementById("loadGameBtn").disabled = true;
-      }
-      window.addEventListener("beforeunload", () => saveGame(false));
-    </script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>

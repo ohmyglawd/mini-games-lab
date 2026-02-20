@@ -1,0 +1,37 @@
+body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  50% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1); }
+}
+@keyframes coinFloat {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-40px); }
+}
+@keyframes toastFade {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -20px); }
+}
+
+.damage-text {
+  position: absolute; color: #ff3b30; font-weight: bold; font-size: 1.5rem; pointer-events: none;
+  animation: floatUp 0.8s ease-out forwards;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  z-index: 50;
+}
+.coin-text {
+  position: absolute; color: #fbbf24; font-weight: bold; font-size: 1.2rem; pointer-events: none;
+  animation: coinFloat 1s ease-out forwards; text-shadow: 1px 1px 0 #000; z-index: 50;
+}
+.toast-msg {
+  position: absolute; bottom: 60%; left: 50%; transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8); border: 1px solid #4a5568; padding: 10px 20px; border-radius: 8px;
+  z-index: 100; pointer-events: none; animation: toastFade 2.5s ease-in-out forwards;
+}
+#offline-modal { backdrop-filter: blur(5px); }
+.hero-btn:active, .prestige-btn:active { transform: scale(0.98); }
