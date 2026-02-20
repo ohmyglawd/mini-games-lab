@@ -59,25 +59,50 @@ export function renderHUD(state, pendingSouls) {
 
 export function renderHeroes(state, onBuy) {
   const container = qs('heroes-container');
+  if (container.childElementCount === state.heroes.length) {
+    updateHeroRows(state);
+    return;
+  }
+
   container.innerHTML = '';
   state.heroes.forEach((hero, index) => {
     const cost = getHeroCost(hero, hero.count);
     const affordable = state.game.gold >= cost;
     const btn = document.createElement('div');
+    btn.dataset.heroIndex = `${index}`;
     btn.className = `hero-btn flex items-center justify-between p-3 rounded-xl border-2 transition-colors cursor-pointer ${
       affordable ? 'bg-gray-700 border-blue-500 hover:bg-gray-600' : 'bg-gray-800 border-gray-600 opacity-60'
     }`;
     btn.innerHTML = `
       <div class="flex flex-col pointer-events-none">
-        <span class="font-bold text-lg">${hero.name} <span class="text-xs text-gray-400 font-normal">Lv.${hero.count}</span></span>
+        <span class="font-bold text-lg">${hero.name} <span id="hero-lv-${index}" class="text-xs text-gray-400 font-normal">Lv.${hero.count}</span></span>
         <span class="text-xs text-green-400">${hero.desc}</span>
       </div>
       <div class="flex flex-col items-end pointer-events-none">
-        <span class="font-bold text-yellow-400">💰 ${formatNumber(cost)}</span>
+        <span class="font-bold text-yellow-400">💰 <span id="hero-cost-${index}">${formatNumber(cost)}</span></span>
         <span class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white mt-1">升級</span>
       </div>`;
     btn.addEventListener('click', () => onBuy(index));
     container.appendChild(btn);
+  });
+}
+
+export function updateHeroRows(state) {
+  state.heroes.forEach((hero, index) => {
+    const cost = getHeroCost(hero, hero.count);
+    const affordable = state.game.gold >= cost;
+
+    const lvEl = qs(`hero-lv-${index}`);
+    const costEl = qs(`hero-cost-${index}`);
+    const rowEl = qs('heroes-container')?.querySelector(`[data-hero-index="${index}"]`);
+
+    if (lvEl) lvEl.textContent = `Lv.${hero.count}`;
+    if (costEl) costEl.textContent = formatNumber(cost);
+    if (rowEl) {
+      rowEl.className = `hero-btn flex items-center justify-between p-3 rounded-xl border-2 transition-colors cursor-pointer ${
+        affordable ? 'bg-gray-700 border-blue-500 hover:bg-gray-600' : 'bg-gray-800 border-gray-600 opacity-60'
+      }`;
+    }
   });
 }
 

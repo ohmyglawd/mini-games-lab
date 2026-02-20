@@ -1,7 +1,7 @@
 import { createInitialState } from './state.js';
 import { clearSnapshot, loadSnapshot, saveSnapshot, storageAvailable } from './storage.js';
 import { recalcStats, spawnMonster, pendingSouls, monsterKillReward, onMonsterKilled } from './gameEngine.js';
-import { renderHUD, renderHeroes, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal } from './ui.js';
+import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
 
@@ -50,6 +50,11 @@ function calcOfflineProgress() {
 }
 
 function refreshUI() {
+  renderHUD(state, pendingSouls(state.game.level));
+  updateHeroRows(state);
+}
+
+function initialRenderUI() {
   renderHUD(state, pendingSouls(state.game.level));
   renderHeroes(state, buyHero);
 }
@@ -137,7 +142,7 @@ function init() {
   spawnMonster(state);
   renderer.createMonster(state.game.level);
 
-  refreshUI();
+  initialRenderUI();
   if (canSave) {
     setSaveStatus('✅ 讀檔成功');
     setTimeout(() => setSaveStatus(''), 2000);
