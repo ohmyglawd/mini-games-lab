@@ -106,9 +106,11 @@ export function updateHeroRows(state) {
   });
 }
 
-export function showOfflineModal({ seconds, kills, gold }) {
+export function showOfflineModal({ seconds, kills, gold, levelsGained, currentLevel, currentKills, killsRequired }) {
   qs('offline-time-text').innerText = timeTextFromSeconds(seconds);
   qs('offline-kills-text').innerText = `${formatNumber(kills)} 隻`;
+  qs('offline-levels-text').innerText = `+${formatNumber(levelsGained)}`;
+  qs('offline-progress-text').innerText = `關卡 ${formatNumber(currentLevel)} · 擊殺 ${formatNumber(currentKills)}/${killsRequired}`;
   qs('offline-gold-text').innerText = formatNumber(gold);
   qs('offline-modal').classList.remove('hidden');
 }

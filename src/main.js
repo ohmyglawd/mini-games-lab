@@ -4,6 +4,7 @@ import { recalcStats, spawnMonster, pendingSouls, monsterKillReward, onMonsterKi
 import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
+import { KILLS_REQUIRED } from './config.js';
 
 const state = createInitialState();
 let canSave = storageAvailable();
@@ -34,18 +35,57 @@ function save() {
 function calcOfflineProgress() {
   const now = Date.now();
   const sec = Math.floor((now - state.game.lastSaveTime) / 1000);
+
   if (sec > 10 && state.game.dps > 0) {
-    const hpMultiplier = Math.pow(1.57, state.game.level - 1);
-    const hp = Math.ceil(10 * hpMultiplier);
-    const perKill = monsterKillReward(hp);
-    const timeToKill = hp / state.game.dps + 0.5;
-    const kills = Math.floor(sec / timeToKill);
-    if (kills > 0) {
-      const gold = kills * perKill;
-      state.game.gold += gold;
-      showOfflineModal({ seconds: sec, kills, gold });
+    let remaining = sec;
+    let simLevel = state.game.level;
+    let simKills = state.game.kills;
+
+    let totalKills = 0;
+    let totalGold = 0;
+
+    // 逐殺模擬，讓離線結算能正確反映「闖關」進度
+    // 每擊殺包含：打怪時間 + 0.5 秒換怪延遲
+    while (remaining > 0) {
+      const hpMultiplier = Math.pow(1.57, simLevel - 1);
+      const hp = Math.ceil(10 * hpMultiplier);
+      const perKill = monsterKillReward(hp);
+      const timeToKill = hp / state.game.dps + 0.5;
+
+      if (remaining < timeToKill) break;
+
+      remaining -= timeToKill;
+      totalKills += 1;
+      totalGold += perKill;
+
+      simKills += 1;
+      if (simKills >= KILLS_REQUIRED) {
+        simKills = 0;
+        simLevel += 1;
+      }
+
+      // 保險閥，避免超長離線造成極端迴圈成本
+      if (totalKills >= 200000) break;
+    }
+
+    if (totalKills > 0) {
+      const levelsGained = simLevel - state.game.level;
+      state.game.gold += totalGold;
+      state.game.level = simLevel;
+      state.game.kills = simKills;
+
+      showOfflineModal({
+        seconds: sec,
+        kills: totalKills,
+        gold: totalGold,
+        levelsGained,
+        currentLevel: state.game.level,
+        currentKills: state.game.kills,
+        killsRequired: KILLS_REQUIRED,
+      });
     }
   }
+
   state.game.lastSaveTime = now;
 }
 
