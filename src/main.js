@@ -11,7 +11,7 @@ import {
   spawnMonster,
   startBossChallenge,
 } from './gameEngine.js';
-import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, spawnBattleEffect } from './ui.js';
+import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, renderAutoAttackers, spawnAutoAttackSwing, spawnBattleEffect } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
 import { ACTIVE_SKILLS, KILLS_REQUIRED } from './config.js';
@@ -109,6 +109,7 @@ function calcOfflineProgress() {
 function refreshUI() {
   renderHUD(state, pendingSouls(state.game.level));
   renderActiveSkills(state, skillCooldowns, castActiveSkill);
+  renderAutoAttackers(state);
   updateHeroRows(state);
 }
 
@@ -138,12 +139,6 @@ function buyHero(index) {
   state.game.gold -= cost;
   hero.count++;
   recalcStats(state);
-
-  if (hero.id === 'h_1') {
-    const procDamage = Math.max(1, Math.floor(state.game.clickDamage * 0.8 + hero.value));
-    spawnBattleEffect('🗡️', `見習劍士 -${formatNumber(procDamage)}`);
-    dealDamage(procDamage, false);
-  }
 
   refreshUI();
   save();
@@ -216,6 +211,17 @@ function killMonster(x, y) {
     renderer.createMonster(state.game.level);
     refreshUI();
   }, 500);
+}
+
+function triggerAutoAttackVisuals() {
+  const activeHeroes = state.heroes.filter(h => h.type === 'dps' && h.count > 0);
+  if (activeHeroes.length === 0 || state.monster.isDead) return;
+
+  activeHeroes.slice(0, 4).forEach((hero) => {
+    const icon = hero.name.split(' ')[0] || '⚔️';
+    const visualDamage = Math.max(1, Math.floor(hero.value * Math.max(1, hero.count) * 0.2));
+    spawnAutoAttackSwing(icon, `-${formatNumber(visualDamage)}`);
+  });
 }
 
 function startBossFight() {
@@ -301,6 +307,10 @@ function init() {
       refreshUI();
     }
   }, 100);
+
+  setInterval(() => {
+    triggerAutoAttackVisuals();
+  }, 900);
 
   setInterval(save, 10000);
   window.addEventListener('beforeunload', save);

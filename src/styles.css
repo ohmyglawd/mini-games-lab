@@ -22,6 +22,10 @@ body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; fon
   20% { opacity: 1; }
   100% { opacity: 0; transform: translate(30px, -50px) scale(1.2) rotate(25deg); }
 }
+@keyframes attackerPulse {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-6px) scale(1.08); opacity: 1; }
+}
 
 .damage-text {
   position: absolute; color: #ff3b30; font-weight: bold; font-size: 1.5rem; pointer-events: none;
@@ -85,6 +89,18 @@ body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; fon
   align-items: center;
   gap: 2px;
   animation: slashEffect 0.8s ease-out forwards;
+}
+
+.auto-swing {
+  left: calc(42% + (8% * (var(--swing-offset, 0))));
+}
+
+.auto-attacker {
+  position: absolute;
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.22));
+  animation: attackerPulse 1s ease-in-out infinite;
 }
 
 .battle-effect-icon {

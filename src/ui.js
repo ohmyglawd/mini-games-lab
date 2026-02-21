@@ -125,6 +125,36 @@ export function spawnBattleEffect(icon, text = '') {
   setTimeout(() => el.remove(), 800);
 }
 
+export function renderAutoAttackers(state) {
+  const zone = qs('auto-attackers');
+  if (!zone) return;
+
+  const dpsHeroes = state.heroes.filter(h => h.type === 'dps' && h.count > 0);
+  zone.innerHTML = '';
+
+  dpsHeroes.slice(0, 6).forEach((hero, idx) => {
+    const icon = hero.name.split(' ')[0] || '⚔️';
+    const el = document.createElement('div');
+    el.className = 'auto-attacker';
+    el.style.left = `${18 + idx * 13}%`;
+    el.style.top = `${55 + (idx % 2) * 8}%`;
+    el.style.animationDelay = `${idx * 0.08}s`;
+    el.innerText = icon;
+    zone.appendChild(el);
+  });
+}
+
+export function spawnAutoAttackSwing(icon, text = '') {
+  const zone = qs('battle-effects');
+  if (!zone) return;
+  const el = document.createElement('div');
+  el.className = 'battle-effect auto-swing';
+  el.style.setProperty('--swing-offset', `${(Math.random() * 2 - 1).toFixed(2)}`);
+  el.innerHTML = `<div class="battle-effect-icon">${icon}</div>${text ? `<div class="battle-effect-text">${text}</div>` : ''}`;
+  zone.appendChild(el);
+  setTimeout(() => el.remove(), 700);
+}
+
 export function renderHUD(state, pendingSouls) {
   qs('ui-gold').innerText = formatNumber(state.game.gold);
   qs('ui-level').innerText = state.game.level;
@@ -178,7 +208,10 @@ export function renderHeroes(state, onBuy) {
         <span class="font-bold text-yellow-400">💰 <span id="hero-cost-${index}">${formatNumber(cost)}</span></span>
         <span class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white mt-1">升級</span>
       </div>`;
-    btn.addEventListener('click', () => onBuy(index));
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      onBuy(index);
+    });
     container.appendChild(btn);
   });
 }
