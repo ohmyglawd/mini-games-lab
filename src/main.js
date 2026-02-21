@@ -1,6 +1,7 @@
 import { createInitialState } from './state.js';
 import { clearSnapshot, loadSnapshot, saveSnapshot, storageAvailable } from './storage.js';
 import {
+  artifactMultiplier,
   bossResultFromTimer,
   isWaitingBoss,
   maxReachableStage,
@@ -11,15 +12,16 @@ import {
   spawnMonster,
   startBossChallenge,
 } from './gameEngine.js';
-import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, renderAutoAttackers, spawnAutoAttackSwing, spawnBattleEffect } from './ui.js';
+import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, renderArtifacts, renderArtifactChoices, hideArtifactChoices, renderAutoAttackers, spawnAutoAttackSwing, spawnBattleEffect } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
-import { ACTIVE_SKILLS, KILLS_REQUIRED } from './config.js';
+import { ACTIVE_SKILLS, ARTIFACT_CHEST_BASE_COST, ARTIFACT_CHEST_COST_MULT, ARTIFACT_POOL, KILLS_REQUIRED } from './config.js';
 
 const state = createInitialState();
 let canSave = storageAvailable();
 const renderer = new Renderer3D(qs('canvas-container'));
 const skillCooldowns = {};
+let chestChoices = [];
 
 function applySnapshot(snapshot) {
   state.game.gold = snapshot.gold || 0;
@@ -27,6 +29,8 @@ function applySnapshot(snapshot) {
   state.game.kills = snapshot.kills || 0;
   state.game.souls = snapshot.souls || 0;
   state.game.highestClearedBossStage = snapshot.highestClearedBossStage || 0;
+  state.game.artifacts = snapshot.artifacts || {};
+  state.game.artifactChestOpened = snapshot.artifactChestOpened || 0;
   state.game.lastSaveTime = snapshot.lastSaveTime || Date.now();
   if (Array.isArray(snapshot.heroesLevels)) {
     state.heroes.forEach((h, i) => { h.count = snapshot.heroesLevels[i] || 0; });
@@ -63,7 +67,7 @@ function calcOfflineProgress() {
 
       const hpMultiplier = Math.pow(1.57, simLevel - 1);
       const hp = Math.ceil(10 * hpMultiplier);
-      const perKill = monsterKillReward(hp);
+      const perKill = monsterKillReward(hp, state);
       const timeToKill = hp / state.game.dps + 0.5;
 
       if (remaining < timeToKill) break;
@@ -106,9 +110,24 @@ function calcOfflineProgress() {
   state.game.lastSaveTime = now;
 }
 
+function getChestCost() {
+  return Math.floor(ARTIFACT_CHEST_BASE_COST * Math.pow(ARTIFACT_CHEST_COST_MULT, state.game.artifactChestOpened));
+}
+
+function randomArtifactChoices(count = 3) {
+  const pool = [...ARTIFACT_POOL];
+  const result = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const pickIndex = Math.floor(Math.random() * pool.length);
+    result.push(pool.splice(pickIndex, 1)[0]);
+  }
+  return result;
+}
+
 function refreshUI() {
   renderHUD(state, pendingSouls(state.game.level));
   renderActiveSkills(state, skillCooldowns, castActiveSkill);
+  renderArtifacts(state, getChestCost(), openArtifactChest);
   renderAutoAttackers(state);
   updateHeroRows(state);
 }
@@ -116,7 +135,36 @@ function refreshUI() {
 function initialRenderUI() {
   renderHUD(state, pendingSouls(state.game.level));
   renderActiveSkills(state, skillCooldowns, castActiveSkill);
+  renderArtifacts(state, getChestCost(), openArtifactChest);
   renderHeroes(state, buyHero);
+}
+
+function openArtifactChest() {
+  const cost = getChestCost();
+  if (state.game.gold < cost) {
+    showToast(`金幣不足，寶箱需要 ${formatNumber(cost)}`);
+    return;
+  }
+
+  state.game.gold -= cost;
+  state.game.artifactChestOpened += 1;
+  chestChoices = randomArtifactChoices(3);
+  renderArtifactChoices(chestChoices, pickArtifact);
+  refreshUI();
+  save();
+}
+
+function pickArtifact(artifactId) {
+  const artifact = chestChoices.find(a => a.id === artifactId);
+  if (!artifact) return;
+
+  state.game.artifacts[artifact.id] = (state.game.artifacts[artifact.id] || 0) + 1;
+  chestChoices = [];
+  hideArtifactChoices();
+  recalcStats(state);
+  refreshUI();
+  showToast(`✨ ${artifact.name} 升到 Lv.${state.game.artifacts[artifact.id]}`);
+  save();
 }
 
 function castActiveSkill(skillId) {
@@ -125,7 +173,9 @@ function castActiveSkill(skillId) {
   if (state.game.level < skill.unlockLevel) return;
   if ((skillCooldowns[skill.id] || 0) > 0) return;
 
-  const damage = Math.max(1, Math.floor((state.game.clickDamage + state.game.dps * 0.5) * skill.damageMult));
+  const skillMult = artifactMultiplier(state, 'artifact_skill', 0.2);
+  const bossMult = state.game.bossChallenge.active ? artifactMultiplier(state, 'artifact_boss', 0.18) : 1;
+  const damage = Math.max(1, Math.floor((state.game.clickDamage + state.game.dps * 0.5) * skill.damageMult * skillMult * bossMult));
   spawnBattleEffect(skill.icon, `${skill.name} -${formatNumber(damage)}`);
   dealDamage(damage, false);
   skillCooldowns[skill.id] = skill.cooldownMs;
@@ -196,7 +246,7 @@ function killMonster(x, y) {
     return;
   }
 
-  const dropGold = monsterKillReward(state.monster.maxHp);
+  const dropGold = monsterKillReward(state.monster.maxHp, state);
   state.game.gold += dropGold;
   renderer.explode(false);
 
@@ -243,6 +293,10 @@ function prestige() {
   state.game.level = 1;
   state.game.kills = 0;
   state.game.highestClearedBossStage = 0;
+  state.game.artifacts = {};
+  state.game.artifactChestOpened = 0;
+  chestChoices = [];
+  hideArtifactChoices();
   state.game.bossChallenge.active = false;
   state.heroes.forEach(h => (h.count = 0));
 
@@ -273,6 +327,7 @@ function init() {
   spawnMonster(state);
   renderer.createMonster(state.game.level);
 
+  hideArtifactChoices();
   initialRenderUI();
   if (canSave) {
     setSaveStatus('✅ 讀檔成功');

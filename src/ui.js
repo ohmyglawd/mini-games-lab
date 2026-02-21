@@ -107,12 +107,58 @@ export function renderActiveSkills(state, skillCooldowns, onCastSkill) {
     const cd = Math.max(0, skillCooldowns[skill.id] || 0);
     const ready = cd <= 0;
     const btn = document.createElement('button');
-    btn.className = `active-skill-btn ${ready ? 'active-skill-ready' : 'active-skill-cd'}`;
-    btn.innerHTML = `${skill.icon} ${skill.name} ${ready ? '' : `<span class="text-[10px]">${(cd / 1000).toFixed(1)}s</span>`}`;
+    btn.className = `active-skill-square ${ready ? 'active-skill-ready' : 'active-skill-cd'}`;
+    btn.innerHTML = `
+      <div class="skill-icon">${skill.icon}</div>
+      <div class="skill-name">${skill.name}</div>
+      <div class="skill-cd">${ready ? 'READY' : `${(cd / 1000).toFixed(1)}s`}</div>
+    `;
     btn.disabled = !ready;
     btn.addEventListener('click', () => onCastSkill(skill.id));
     wrap.appendChild(btn);
   });
+}
+
+export function renderArtifacts(state, chestCost, onOpenChest) {
+  const wrap = qs('artifact-summary');
+  const btn = qs('btn-artifact-chest');
+  const costEl = qs('ui-artifact-cost');
+  if (!wrap || !btn || !costEl) return;
+
+  costEl.innerText = formatNumber(chestCost);
+  btn.classList.toggle('opacity-50', state.game.gold < chestCost);
+  btn.onclick = onOpenChest;
+
+  const list = Object.entries(state.game.artifacts || {})
+    .filter(([, lv]) => lv > 0)
+    .map(([id, lv]) => {
+      const meta = ARTIFACT_POOL.find(a => a.id === id);
+      return `${meta?.icon || '✨'}${meta?.name || id} Lv.${lv}`;
+    });
+
+  wrap.innerText = list.length > 0 ? list.join(' · ') : '尚無神器';
+}
+
+export function renderArtifactChoices(choices, onPick) {
+  const modal = qs('artifact-modal');
+  const list = qs('artifact-choices');
+  if (!modal || !list) return;
+
+  list.innerHTML = '';
+  choices.forEach((artifact) => {
+    const btn = document.createElement('button');
+    btn.className = 'artifact-choice-btn';
+    btn.innerHTML = `<div class="text-2xl">${artifact.icon}</div><div class="font-bold text-sm">${artifact.name}</div><div class="text-[11px] text-gray-300">${artifact.desc}</div>`;
+    btn.addEventListener('click', () => onPick(artifact.id));
+    list.appendChild(btn);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+export function hideArtifactChoices() {
+  const modal = qs('artifact-modal');
+  if (modal) modal.classList.add('hidden');
 }
 
 export function spawnBattleEffect(icon, text = '') {
@@ -209,8 +255,21 @@ export function renderHeroes(state, onBuy) {
         <span class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white mt-1">升級</span>
       </div>`;
     btn.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      onBuy(index);
+      btn.dataset.downX = `${e.clientX}`;
+      btn.dataset.downY = `${e.clientY}`;
+      btn.dataset.moved = '0';
+    });
+    btn.addEventListener('pointermove', (e) => {
+      const sx = Number(btn.dataset.downX || e.clientX);
+      const sy = Number(btn.dataset.downY || e.clientY);
+      if (Math.hypot(e.clientX - sx, e.clientY - sy) > 12) btn.dataset.moved = '1';
+    });
+    btn.addEventListener('pointerup', () => {
+      if (btn.dataset.moved !== '1') onBuy(index);
+      btn.dataset.moved = '0';
+    });
+    btn.addEventListener('pointercancel', () => {
+      btn.dataset.moved = '1';
     });
     container.appendChild(btn);
   });

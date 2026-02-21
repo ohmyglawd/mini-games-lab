@@ -65,6 +65,13 @@
         <div class="text-[11px] text-cyan-300 mb-1">主動技</div>
         <div id="active-skills" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
       </div>
+      <div class="px-2 pt-1">
+        <div class="text-[11px] text-amber-300 mb-1">神器系統</div>
+        <div class="flex items-center gap-2">
+          <button id="btn-artifact-chest" class="bg-amber-500 hover:bg-amber-400 text-gray-900 text-xs font-bold px-2 py-1 rounded">開神器寶箱 💰<span id="ui-artifact-cost">0</span></button>
+          <span id="artifact-summary" class="text-[11px] text-gray-300">尚無神器</span>
+        </div>
+      </div>
       <div id="heroes-container" class="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2 pb-6"></div>
     </footer>
 
@@ -82,6 +89,13 @@
           <div class="flex justify-between items-center"><span class="text-gray-400 text-sm">離線收益：</span><span class="text-yellow-400 font-bold text-lg">💰 <span id="offline-gold-text">0</span></span></div>
         </div>
         <button id="btn-offline-claim" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-3 rounded-xl transition-colors text-lg">領取收益</button>
+      </div>
+    </div>
+
+    <div id="artifact-modal" class="hidden absolute inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+      <div class="bg-gray-800 border border-amber-500 rounded-xl p-4 w-full max-w-md">
+        <div class="text-amber-300 font-bold mb-3">選擇 1 個神器</div>
+        <div id="artifact-choices" class="grid grid-cols-1 gap-2"></div>
       </div>
     </div>
 

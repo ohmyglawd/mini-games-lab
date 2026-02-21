@@ -1,5 +1,13 @@
 import { BOSS_CHALLENGE_SECONDS, BOSS_STAGE_INTERVAL, KILLS_REQUIRED, SOUL_BONUS_PER_SOUL } from './config.js';
 
+export function artifactLevel(state, artifactId) {
+  return state.game.artifacts?.[artifactId] || 0;
+}
+
+export function artifactMultiplier(state, artifactId, perLevelBonus) {
+  return 1 + artifactLevel(state, artifactId) * perLevelBonus;
+}
+
 export function recalcStats(state) {
   let baseClick = 1;
   let baseDps = 0;
@@ -7,9 +15,11 @@ export function recalcStats(state) {
     if (h.type === 'click') baseClick += h.value * h.count;
     if (h.type === 'dps') baseDps += h.value * h.count;
   });
-  const mult = 1 + state.game.souls * SOUL_BONUS_PER_SOUL;
-  state.game.clickDamage = Math.floor(baseClick * mult);
-  state.game.dps = Math.floor(baseDps * mult);
+  const soulMult = 1 + state.game.souls * SOUL_BONUS_PER_SOUL;
+  const clickArtifactMult = artifactMultiplier(state, 'artifact_click', 0.15);
+  const dpsArtifactMult = artifactMultiplier(state, 'artifact_dps', 0.12);
+  state.game.clickDamage = Math.floor(baseClick * soulMult * clickArtifactMult);
+  state.game.dps = Math.floor(baseDps * soulMult * dpsArtifactMult);
 }
 
 export function nextBossStage(highestClearedBossStage) {
@@ -78,8 +88,11 @@ export function pendingSouls(level) {
   return Math.floor(level / 5);
 }
 
-export function monsterKillReward(maxHp) {
-  return Math.max(1, Math.ceil(maxHp / 15));
+export function monsterKillReward(maxHp, state = null) {
+  const base = Math.max(1, Math.ceil(maxHp / 15));
+  if (!state) return base;
+  const goldMult = artifactMultiplier(state, 'artifact_gold', 0.1);
+  return Math.max(1, Math.floor(base * goldMult));
 }
 
 export function onMonsterKilled(state) {

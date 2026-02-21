@@ -1,4 +1,4 @@
-export const SAVE_KEY = 'clicker_heroes_save_v5';
+export const SAVE_KEY = 'clicker_heroes_save_v6';
 export const KILLS_REQUIRED = 10;
 export const SOUL_BONUS_PER_SOUL = 0.1;
 export const BOSS_STAGE_INTERVAL = 10;
@@ -11,6 +11,17 @@ export const ACTIVE_SKILLS = [
   { id: 'skill_power_strike', name: '重擊', icon: '💥', unlockLevel: 3, cooldownMs: 8000, damageMult: 8 },
   { id: 'skill_meteor', name: '隕火術', icon: '☄️', unlockLevel: 8, cooldownMs: 15000, damageMult: 20 },
   { id: 'skill_shadow_burst', name: '影爆', icon: '🕳️', unlockLevel: 15, cooldownMs: 22000, damageMult: 35 },
+];
+
+export const ARTIFACT_CHEST_BASE_COST = 500;
+export const ARTIFACT_CHEST_COST_MULT = 1.55;
+
+export const ARTIFACT_POOL = [
+  { id: 'artifact_click', name: '戰神護符', icon: '🧿', desc: '點擊傷害 +15%/級' },
+  { id: 'artifact_dps', name: '永燃火核', icon: '🔥', desc: 'DPS +12%/級' },
+  { id: 'artifact_skill', name: '法能水晶', icon: '💠', desc: '主動技能傷害 +20%/級' },
+  { id: 'artifact_gold', name: '黃金聖杯', icon: '🏆', desc: '金幣掉落 +10%/級' },
+  { id: 'artifact_boss', name: '屠王印記', icon: '👑', desc: '對 Boss 傷害 +18%/級' },
 ];
 
 export const HEROES = [

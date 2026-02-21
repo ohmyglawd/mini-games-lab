@@ -10,6 +10,8 @@ export function createInitialState() {
       clickDamage: 1,
       dps: 0,
       highestClearedBossStage: 0,
+      artifacts: {},
+      artifactChestOpened: 0,
       bossChallenge: {
         active: false,
         stage: 0,
