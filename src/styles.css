@@ -35,3 +35,18 @@ body { margin: 0; overflow: hidden; background-color: #1a202c; color: white; fon
 }
 #offline-modal { backdrop-filter: blur(5px); }
 .hero-btn:active, .prestige-btn:active { transform: scale(0.98); }
+
+.map-chip {
+  white-space: nowrap;
+  background: #1f2937;
+  border: 1px solid #4b5563;
+  color: #d1d5db;
+  border-radius: 9999px;
+  padding: 2px 8px;
+}
+
+.map-chip-current {
+  border-color: #22d3ee;
+  color: #a5f3fc;
+  background: #0f172a;
+}

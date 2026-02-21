@@ -32,8 +32,13 @@
       <div class="mt-1">
         <div class="flex justify-between text-xs mb-1">
           <span id="ui-monster-name" class="font-bold">載入中...</span>
-          <span>擊殺: <span id="ui-kills">0</span>/10</span>
+          <span>進度: <span id="ui-kills">0/10</span></span>
         </div>
+        <div id="boss-panel" class="mt-1 bg-gray-900/80 border border-amber-700 rounded px-2 py-1 text-[11px] flex items-center justify-between gap-2">
+          <span id="ui-boss-info" class="text-amber-300">下一個 Boss：Lv.10</span>
+          <button id="btn-boss-challenge" class="hidden bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold px-2 py-0.5 rounded">挑戰 Boss</button>
+        </div>
+        <div id="ui-map" class="mt-1 flex gap-1 overflow-x-auto no-scrollbar text-[10px]"></div>
         <div class="w-full h-4 bg-gray-900 rounded-full overflow-hidden border border-gray-600 relative">
           <div id="ui-hp-bar" class="h-full bg-red-500 transition-all duration-100" style="width: 100%"></div>
           <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold drop-shadow-md">

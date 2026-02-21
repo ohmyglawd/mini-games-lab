@@ -1,4 +1,4 @@
-import { KILLS_REQUIRED, SOUL_BONUS_PER_SOUL } from './config.js';
+import { BOSS_CHALLENGE_SECONDS, BOSS_STAGE_INTERVAL, KILLS_REQUIRED, SOUL_BONUS_PER_SOUL } from './config.js';
 
 export function recalcStats(state) {
   let baseClick = 1;
@@ -12,11 +12,66 @@ export function recalcStats(state) {
   state.game.dps = Math.floor(baseDps * mult);
 }
 
+export function nextBossStage(highestClearedBossStage) {
+  return highestClearedBossStage + BOSS_STAGE_INTERVAL;
+}
+
+export function isWaitingBoss(state) {
+  return !state.game.bossChallenge.active && state.game.level === nextBossStage(state.game.highestClearedBossStage) - 1;
+}
+
+export function makeBossRequiredDamage(stage) {
+  const hpMultiplier = Math.pow(1.57, stage - 1);
+  const stageHp = Math.ceil(10 * hpMultiplier);
+  return Math.ceil(stageHp * KILLS_REQUIRED * 0.9);
+}
+
 export function spawnMonster(state) {
   state.monster.isDead = false;
+
+  if (state.game.bossChallenge.active) {
+    state.monster.maxHp = state.game.bossChallenge.requiredDamage;
+    state.monster.hp = Math.max(0, state.monster.maxHp - state.game.bossChallenge.damageDone);
+    return;
+  }
+
   const hpMultiplier = Math.pow(1.57, state.game.level - 1);
   state.monster.maxHp = Math.ceil(10 * hpMultiplier);
   state.monster.hp = state.monster.maxHp;
+}
+
+export function startBossChallenge(state) {
+  const stage = nextBossStage(state.game.highestClearedBossStage);
+  state.game.bossChallenge.active = true;
+  state.game.bossChallenge.stage = stage;
+  state.game.bossChallenge.requiredDamage = makeBossRequiredDamage(stage);
+  state.game.bossChallenge.damageDone = 0;
+  state.game.bossChallenge.timeLeftMs = BOSS_CHALLENGE_SECONDS * 1000;
+}
+
+export function bossResultFromTimer(state, elapsedMs) {
+  if (!state.game.bossChallenge.active) return null;
+
+  state.game.bossChallenge.timeLeftMs = Math.max(0, state.game.bossChallenge.timeLeftMs - elapsedMs);
+
+  if (state.game.bossChallenge.damageDone >= state.game.bossChallenge.requiredDamage) {
+    const clearedStage = state.game.bossChallenge.stage;
+    state.game.highestClearedBossStage = Math.max(state.game.highestClearedBossStage, clearedStage);
+    state.game.level = clearedStage;
+    state.game.kills = 0;
+    state.game.bossChallenge.active = false;
+    return { success: true, clearedStage };
+  }
+
+  if (state.game.bossChallenge.timeLeftMs <= 0) {
+    const failedStage = state.game.bossChallenge.stage;
+    state.game.level = Math.max(1, failedStage - 1);
+    state.game.kills = KILLS_REQUIRED;
+    state.game.bossChallenge.active = false;
+    return { success: false, failedStage };
+  }
+
+  return null;
 }
 
 export function pendingSouls(level) {
@@ -28,9 +83,23 @@ export function monsterKillReward(maxHp) {
 }
 
 export function onMonsterKilled(state) {
+  if (state.game.bossChallenge.active) return;
+
   state.game.kills++;
   if (state.game.kills >= KILLS_REQUIRED) {
+    const maybeNextLevel = state.game.level + 1;
+    const lockedBoss = nextBossStage(state.game.highestClearedBossStage);
+
+    if (maybeNextLevel === lockedBoss) {
+      state.game.kills = KILLS_REQUIRED;
+      return;
+    }
+
     state.game.kills = 0;
-    state.game.level++;
+    state.game.level = maybeNextLevel;
   }
+}
+
+export function maxReachableStage(state) {
+  return nextBossStage(state.game.highestClearedBossStage) - 1;
 }

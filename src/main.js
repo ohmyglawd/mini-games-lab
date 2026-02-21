@@ -1,6 +1,16 @@
 import { createInitialState } from './state.js';
 import { clearSnapshot, loadSnapshot, saveSnapshot, storageAvailable } from './storage.js';
-import { recalcStats, spawnMonster, pendingSouls, monsterKillReward, onMonsterKilled } from './gameEngine.js';
+import {
+  bossResultFromTimer,
+  isWaitingBoss,
+  maxReachableStage,
+  monsterKillReward,
+  onMonsterKilled,
+  pendingSouls,
+  recalcStats,
+  spawnMonster,
+  startBossChallenge,
+} from './gameEngine.js';
 import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
@@ -15,6 +25,7 @@ function applySnapshot(snapshot) {
   state.game.level = snapshot.level || 1;
   state.game.kills = snapshot.kills || 0;
   state.game.souls = snapshot.souls || 0;
+  state.game.highestClearedBossStage = snapshot.highestClearedBossStage || 0;
   state.game.lastSaveTime = snapshot.lastSaveTime || Date.now();
   if (Array.isArray(snapshot.heroesLevels)) {
     state.heroes.forEach((h, i) => { h.count = snapshot.heroesLevels[i] || 0; });
@@ -41,12 +52,14 @@ function calcOfflineProgress() {
     let simLevel = state.game.level;
     let simKills = state.game.kills;
 
+    const stageCap = maxReachableStage(state);
+
     let totalKills = 0;
     let totalGold = 0;
 
-    // 逐殺模擬，讓離線結算能正確反映「闖關」進度
-    // 每擊殺包含：打怪時間 + 0.5 秒換怪延遲
     while (remaining > 0) {
+      if (simLevel >= stageCap && simKills >= KILLS_REQUIRED) break;
+
       const hpMultiplier = Math.pow(1.57, simLevel - 1);
       const hp = Math.ceil(10 * hpMultiplier);
       const perKill = monsterKillReward(hp);
@@ -60,11 +73,14 @@ function calcOfflineProgress() {
 
       simKills += 1;
       if (simKills >= KILLS_REQUIRED) {
-        simKills = 0;
-        simLevel += 1;
+        if (simLevel < stageCap) {
+          simKills = 0;
+          simLevel += 1;
+        } else {
+          simKills = KILLS_REQUIRED;
+        }
       }
 
-      // 保險閥，避免超長離線造成極端迴圈成本
       if (totalKills >= 200000) break;
     }
 
@@ -113,20 +129,54 @@ function buyHero(index) {
 function dealDamage(amount, isClick = false, x = null, y = null) {
   if (state.monster.isDead) return;
   state.monster.hp -= amount;
+
+  if (state.game.bossChallenge.active) {
+    state.game.bossChallenge.damageDone = Math.min(
+      state.game.bossChallenge.requiredDamage,
+      state.game.bossChallenge.damageDone + amount,
+    );
+  }
+
   if (isClick) {
     renderer.hit();
     const tx = x ?? document.body.clientWidth / 2;
     const ty = y ?? document.body.clientHeight / 3;
     spawnFloatingText(tx, ty, `-${formatNumber(amount)}`, 'damage');
   }
+
   if (state.monster.hp <= 0) killMonster(x, y);
   else refreshUI();
+}
+
+function finishBossIfNeeded() {
+  if (!state.game.bossChallenge.active) return false;
+
+  const result = bossResultFromTimer(state, 0);
+  if (!result) return false;
+
+  spawnMonster(state);
+  renderer.createMonster(state.game.level);
+  refreshUI();
+
+  if (result.success) {
+    showToast(`🏆 Boss Lv.${result.clearedStage} 通關！已解鎖下一區域`);
+  } else {
+    showToast(`💥 Boss 挑戰失敗，退回關卡 ${result.failedStage - 1}`);
+  }
+
+  save();
+  return true;
 }
 
 function killMonster(x, y) {
   if (state.monster.isDead) return;
   state.monster.isDead = true;
   state.monster.hp = 0;
+
+  if (state.game.bossChallenge.active) {
+    finishBossIfNeeded();
+    return;
+  }
 
   const dropGold = monsterKillReward(state.monster.maxHp);
   state.game.gold += dropGold;
@@ -145,6 +195,16 @@ function killMonster(x, y) {
   }, 500);
 }
 
+function startBossFight() {
+  if (!isWaitingBoss(state)) return;
+  startBossChallenge(state);
+  spawnMonster(state);
+  renderer.flash();
+  renderer.createMonster(state.game.bossChallenge.stage);
+  refreshUI();
+  showToast(`⚔️ Boss Lv.${state.game.bossChallenge.stage} 挑戰開始！`);
+}
+
 function prestige() {
   const gain = pendingSouls(state.game.level);
   if (gain <= 0) return showToast('到達第 5 關後才能轉生！');
@@ -153,6 +213,8 @@ function prestige() {
   state.game.gold = 0;
   state.game.level = 1;
   state.game.kills = 0;
+  state.game.highestClearedBossStage = 0;
+  state.game.bossChallenge.active = false;
   state.heroes.forEach(h => (h.count = 0));
 
   renderer.flash();
@@ -191,10 +253,25 @@ function init() {
   qs('click-zone').addEventListener('pointerdown', (e) => dealDamage(state.game.clickDamage, true, e.clientX, e.clientY));
   qs('btn-prestige').addEventListener('click', prestige);
   qs('btn-reset').addEventListener('click', reset);
+  qs('btn-boss-challenge').addEventListener('click', startBossFight);
   qs('btn-offline-claim').addEventListener('click', () => { hideOfflineModal(); refreshUI(); save(); });
 
   setInterval(() => {
     if (state.game.dps > 0 && !state.monster.isDead) dealDamage(state.game.dps / 10);
+  }, 100);
+
+  setInterval(() => {
+    const result = bossResultFromTimer(state, 100);
+    if (result) {
+      spawnMonster(state);
+      renderer.createMonster(state.game.level);
+      refreshUI();
+      if (result.success) showToast(`🏆 Boss Lv.${result.clearedStage} 通關！`);
+      else showToast(`💥 Boss 挑戰失敗，退回關卡 ${result.failedStage - 1}`);
+      save();
+    } else if (state.game.bossChallenge.active) {
+      refreshUI();
+    }
   }, 100);
 
   setInterval(save, 10000);

@@ -1,5 +1,6 @@
 import { KILLS_REQUIRED, MONSTER_NAMES, SOUL_BONUS_PER_SOUL } from './config.js';
 import { formatNumber, getHeroCost, timeTextFromSeconds } from './utils.js';
+import { isWaitingBoss, makeBossRequiredDamage, nextBossStage } from './gameEngine.js';
 
 export function qs(id) { return document.getElementById(id); }
 
@@ -23,7 +24,8 @@ export function spawnFloatingText(x, y, text, type) {
   setTimeout(() => el.remove(), 1000);
 }
 
-export function monsterNameByLevel(level) {
+export function monsterNameByLevel(level, state) {
+  if (state?.game?.bossChallenge?.active) return `👑 Boss Lv.${state.game.bossChallenge.stage}`;
   const typeIndex = (level - 1) % MONSTER_NAMES.length;
   let prefix = '';
   if (level > 50) prefix = '終極';
@@ -32,16 +34,74 @@ export function monsterNameByLevel(level) {
   return `${prefix}${MONSTER_NAMES[typeIndex]}`;
 }
 
+function renderMap(state) {
+  const mapEl = qs('ui-map');
+  if (!mapEl) return;
+
+  const currentStage = state.game.level;
+  const lockBoss = nextBossStage(state.game.highestClearedBossStage);
+
+  const ranges = [];
+  const maxRange = Math.max(Math.ceil(lockBoss / 10) + 1, Math.ceil(currentStage / 10) + 1, 3);
+  for (let i = 1; i <= maxRange; i++) {
+    const start = (i - 1) * 10 + 1;
+    const end = i * 10;
+    const isCurrent = currentStage >= start && currentStage <= end;
+    const isCleared = state.game.highestClearedBossStage >= end;
+    const isLocked = end > lockBoss;
+    const isBossPending = end === lockBoss && isWaitingBoss(state);
+
+    let icon = '🧭';
+    if (isCleared) icon = '✅';
+    else if (isLocked) icon = '🔒';
+    else if (state.game.bossChallenge.active && end === state.game.bossChallenge.stage) icon = '⚔️';
+    else if (isBossPending) icon = '👑';
+
+    ranges.push(`<div class="map-chip ${isCurrent ? 'map-chip-current' : ''}">${icon} ${start}-${end}</div>`);
+  }
+
+  mapEl.innerHTML = ranges.join('');
+}
+
+function renderBossPanel(state) {
+  const panel = qs('boss-panel');
+  const btn = qs('btn-boss-challenge');
+  const text = qs('ui-boss-info');
+  if (!panel || !btn || !text) return;
+
+  const lockBoss = nextBossStage(state.game.highestClearedBossStage);
+  const challenge = state.game.bossChallenge;
+
+  if (challenge.active) {
+    panel.classList.remove('hidden');
+    btn.classList.add('hidden');
+    const secLeft = Math.ceil(challenge.timeLeftMs / 1000);
+    text.innerText = `⚔️ Boss Lv.${challenge.stage} 進行中｜傷害 ${formatNumber(challenge.damageDone)}/${formatNumber(challenge.requiredDamage)}｜剩餘 ${secLeft}s`;
+    return;
+  }
+
+  if (isWaitingBoss(state)) {
+    panel.classList.remove('hidden');
+    btn.classList.remove('hidden');
+    text.innerText = `👑 卡關 Boss Lv.${lockBoss}｜30 秒內造成 ${formatNumber(makeBossRequiredDamage(lockBoss))} 傷害`;
+    return;
+  }
+
+  panel.classList.remove('hidden');
+  btn.classList.add('hidden');
+  text.innerText = `下一個 Boss：Lv.${lockBoss}`;
+}
+
 export function renderHUD(state, pendingSouls) {
   qs('ui-gold').innerText = formatNumber(state.game.gold);
   qs('ui-level').innerText = state.game.level;
   qs('ui-click-damage').innerText = formatNumber(state.game.clickDamage);
   qs('ui-dps').innerText = formatNumber(state.game.dps);
-  qs('ui-kills').innerText = state.game.kills;
+  qs('ui-kills').innerText = state.game.bossChallenge.active ? 'BOSS 戰鬥中' : `${state.game.kills}/${KILLS_REQUIRED}`;
   qs('ui-souls').innerText = formatNumber(state.game.souls);
   qs('ui-souls-bonus').innerText = formatNumber(state.game.souls * SOUL_BONUS_PER_SOUL * 100);
   qs('ui-pending-souls').innerText = pendingSouls;
-  qs('ui-monster-name').innerText = monsterNameByLevel(state.game.level);
+  qs('ui-monster-name').innerText = monsterNameByLevel(state.game.level, state);
 
   const hpPercent = Math.max(0, (state.monster.hp / state.monster.maxHp) * 100);
   qs('ui-hp-bar').style.width = `${hpPercent}%`;
@@ -55,6 +115,9 @@ export function renderHUD(state, pendingSouls) {
     prestigeBtn.classList.add('opacity-50', 'grayscale');
     prestigeBtn.classList.remove('animate-pulse');
   }
+
+  renderMap(state);
+  renderBossPanel(state);
 }
 
 export function renderHeroes(state, onBuy) {

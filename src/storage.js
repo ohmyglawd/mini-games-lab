@@ -16,6 +16,7 @@ export function saveSnapshot(state) {
     level: state.game.level,
     kills: state.game.kills,
     souls: state.game.souls,
+    highestClearedBossStage: state.game.highestClearedBossStage || 0,
     lastSaveTime: Date.now(),
     heroesLevels: state.heroes.map(h => h.count),
   };
