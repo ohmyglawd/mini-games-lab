@@ -1,4 +1,4 @@
-export const SAVE_KEY = 'clicker_heroes_save_v4';
+export const SAVE_KEY = 'clicker_heroes_save_v5';
 export const KILLS_REQUIRED = 10;
 export const SOUL_BONUS_PER_SOUL = 0.1;
 export const BOSS_STAGE_INTERVAL = 10;
@@ -6,6 +6,12 @@ export const BOSS_CHALLENGE_SECONDS = 30;
 
 export const MONSTER_COLORS = [0x48bb78, 0x4299e1, 0xed8936, 0x9f7aea, 0xf56565, 0x38b2ac];
 export const MONSTER_NAMES = ['史萊姆', '水精靈', '哥布林', '暗影獸', '赤魔', '晶石怪'];
+
+export const ACTIVE_SKILLS = [
+  { id: 'skill_power_strike', name: '重擊', icon: '💥', unlockLevel: 3, cooldownMs: 8000, damageMult: 8 },
+  { id: 'skill_meteor', name: '隕火術', icon: '☄️', unlockLevel: 8, cooldownMs: 15000, damageMult: 20 },
+  { id: 'skill_shadow_burst', name: '影爆', icon: '🕳️', unlockLevel: 15, cooldownMs: 22000, damageMult: 35 },
+];
 
 export const HEROES = [
   { id: 'h_click', name: '💪 鍛鍊臂力', desc: '+1 基礎點擊', type: 'click', value: 1, baseCost: 10, costMult: 1.5 },

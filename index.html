@@ -50,6 +50,7 @@
 
     <main class="flex-1 relative bg-gray-900 overflow-hidden" id="canvas-container">
       <div id="click-zone" class="absolute inset-0 z-10 cursor-pointer touch-manipulation"></div>
+      <div id="battle-effects" class="absolute inset-0 z-20 pointer-events-none"></div>
     </main>
 
     <footer class="h-2/5 md:h-1/2 bg-gray-800 border-t border-gray-700 flex flex-col relative z-20">
@@ -58,6 +59,10 @@
         <button id="btn-prestige" class="prestige-btn bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded-md text-xs border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)] transition-all opacity-50 grayscale">
           ✨ 轉生 (可獲 <span id="ui-pending-souls">0</span> 魂)
         </button>
+      </div>
+      <div class="px-2 pt-2">
+        <div class="text-[11px] text-cyan-300 mb-1">主動技</div>
+        <div id="active-skills" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
       </div>
       <div id="heroes-container" class="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2 pb-6"></div>
     </footer>

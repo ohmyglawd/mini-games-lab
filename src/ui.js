@@ -1,4 +1,4 @@
-import { KILLS_REQUIRED, MONSTER_NAMES, SOUL_BONUS_PER_SOUL } from './config.js';
+import { ACTIVE_SKILLS, KILLS_REQUIRED, MONSTER_NAMES, SOUL_BONUS_PER_SOUL } from './config.js';
 import { formatNumber, getHeroCost, timeTextFromSeconds } from './utils.js';
 import { isWaitingBoss, makeBossRequiredDamage, nextBossStage } from './gameEngine.js';
 
@@ -90,6 +90,39 @@ function renderBossPanel(state) {
   panel.classList.remove('hidden');
   btn.classList.add('hidden');
   text.innerText = `下一個 Boss：Lv.${lockBoss}`;
+}
+
+export function renderActiveSkills(state, skillCooldowns, onCastSkill) {
+  const wrap = qs('active-skills');
+  if (!wrap) return;
+
+  const unlocked = ACTIVE_SKILLS.filter(s => state.game.level >= s.unlockLevel);
+  if (unlocked.length === 0) {
+    wrap.innerHTML = '<div class="text-[11px] text-gray-400">主動技將於關卡 3 解鎖</div>';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  unlocked.forEach((skill) => {
+    const cd = Math.max(0, skillCooldowns[skill.id] || 0);
+    const ready = cd <= 0;
+    const btn = document.createElement('button');
+    btn.className = `active-skill-btn ${ready ? 'active-skill-ready' : 'active-skill-cd'}`;
+    btn.innerHTML = `${skill.icon} ${skill.name} ${ready ? '' : `<span class="text-[10px]">${(cd / 1000).toFixed(1)}s</span>`}`;
+    btn.disabled = !ready;
+    btn.addEventListener('click', () => onCastSkill(skill.id));
+    wrap.appendChild(btn);
+  });
+}
+
+export function spawnBattleEffect(icon, text = '') {
+  const zone = qs('battle-effects');
+  if (!zone) return;
+  const el = document.createElement('div');
+  el.className = 'battle-effect';
+  el.innerHTML = `<div class="battle-effect-icon">${icon}</div>${text ? `<div class="battle-effect-text">${text}</div>` : ''}`;
+  zone.appendChild(el);
+  setTimeout(() => el.remove(), 800);
 }
 
 export function renderHUD(state, pendingSouls) {

@@ -11,14 +11,15 @@ import {
   spawnMonster,
   startBossChallenge,
 } from './gameEngine.js';
-import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal } from './ui.js';
+import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, spawnBattleEffect } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
-import { KILLS_REQUIRED } from './config.js';
+import { ACTIVE_SKILLS, KILLS_REQUIRED } from './config.js';
 
 const state = createInitialState();
 let canSave = storageAvailable();
 const renderer = new Renderer3D(qs('canvas-container'));
+const skillCooldowns = {};
 
 function applySnapshot(snapshot) {
   state.game.gold = snapshot.gold || 0;
@@ -107,12 +108,27 @@ function calcOfflineProgress() {
 
 function refreshUI() {
   renderHUD(state, pendingSouls(state.game.level));
+  renderActiveSkills(state, skillCooldowns, castActiveSkill);
   updateHeroRows(state);
 }
 
 function initialRenderUI() {
   renderHUD(state, pendingSouls(state.game.level));
+  renderActiveSkills(state, skillCooldowns, castActiveSkill);
   renderHeroes(state, buyHero);
+}
+
+function castActiveSkill(skillId) {
+  const skill = ACTIVE_SKILLS.find(s => s.id === skillId);
+  if (!skill) return;
+  if (state.game.level < skill.unlockLevel) return;
+  if ((skillCooldowns[skill.id] || 0) > 0) return;
+
+  const damage = Math.max(1, Math.floor((state.game.clickDamage + state.game.dps * 0.5) * skill.damageMult));
+  spawnBattleEffect(skill.icon, `${skill.name} -${formatNumber(damage)}`);
+  dealDamage(damage, false);
+  skillCooldowns[skill.id] = skill.cooldownMs;
+  refreshUI();
 }
 
 function buyHero(index) {
@@ -122,6 +138,13 @@ function buyHero(index) {
   state.game.gold -= cost;
   hero.count++;
   recalcStats(state);
+
+  if (hero.id === 'h_1') {
+    const procDamage = Math.max(1, Math.floor(state.game.clickDamage * 0.8 + hero.value));
+    spawnBattleEffect('🗡️', `見習劍士 -${formatNumber(procDamage)}`);
+    dealDamage(procDamage, false);
+  }
+
   refreshUI();
   save();
 }
@@ -261,6 +284,11 @@ function init() {
   }, 100);
 
   setInterval(() => {
+    ACTIVE_SKILLS.forEach((skill) => {
+      if (!skillCooldowns[skill.id]) return;
+      skillCooldowns[skill.id] = Math.max(0, skillCooldowns[skill.id] - 100);
+    });
+
     const result = bossResultFromTimer(state, 100);
     if (result) {
       spawnMonster(state);
