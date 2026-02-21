@@ -16,6 +16,16 @@ export const ACTIVE_SKILLS = [
 export const ARTIFACT_CHEST_BASE_COST = 500;
 export const ARTIFACT_CHEST_COST_MULT = 1.55;
 
+export const ARTIFACT_RARITY = {
+  common: { label: '普通', weight: 70, levelGain: 1 },
+  rare: { label: '稀有', weight: 22, levelGain: 1 },
+  epic: { label: '史詩', weight: 7, levelGain: 2 },
+  legendary: { label: '傳說', weight: 1, levelGain: 3 },
+};
+
+export const ARTIFACT_PITY_EPIC_AFTER = 8;
+export const ARTIFACT_PITY_LEGENDARY_AFTER = 20;
+
 export const ARTIFACT_POOL = [
   { id: 'artifact_click', name: '戰神護符', icon: '🧿', desc: '點擊傷害 +15%/級' },
   { id: 'artifact_dps', name: '永燃火核', icon: '🔥', desc: 'DPS +12%/級' },

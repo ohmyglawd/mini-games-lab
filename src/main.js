@@ -15,7 +15,7 @@ import {
 import { renderHUD, renderHeroes, updateHeroRows, setSaveStatus, showToast, spawnFloatingText, qs, showOfflineModal, hideOfflineModal, renderActiveSkills, renderArtifacts, renderArtifactChoices, hideArtifactChoices, renderAutoAttackers, spawnAutoAttackSwing, spawnBattleEffect } from './ui.js';
 import { formatNumber, getHeroCost } from './utils.js';
 import { Renderer3D } from './renderer3d.js';
-import { ACTIVE_SKILLS, ARTIFACT_CHEST_BASE_COST, ARTIFACT_CHEST_COST_MULT, ARTIFACT_POOL, KILLS_REQUIRED } from './config.js';
+import { ACTIVE_SKILLS, ARTIFACT_CHEST_BASE_COST, ARTIFACT_CHEST_COST_MULT, ARTIFACT_PITY_EPIC_AFTER, ARTIFACT_PITY_LEGENDARY_AFTER, ARTIFACT_POOL, ARTIFACT_RARITY, KILLS_REQUIRED } from './config.js';
 
 const state = createInitialState();
 let canSave = storageAvailable();
@@ -31,6 +31,8 @@ function applySnapshot(snapshot) {
   state.game.highestClearedBossStage = snapshot.highestClearedBossStage || 0;
   state.game.artifacts = snapshot.artifacts || {};
   state.game.artifactChestOpened = snapshot.artifactChestOpened || 0;
+  state.game.artifactPityEpic = snapshot.artifactPityEpic || 0;
+  state.game.artifactPityLegendary = snapshot.artifactPityLegendary || 0;
   state.game.lastSaveTime = snapshot.lastSaveTime || Date.now();
   if (Array.isArray(snapshot.heroesLevels)) {
     state.heroes.forEach((h, i) => { h.count = snapshot.heroesLevels[i] || 0; });
@@ -114,12 +116,32 @@ function getChestCost() {
   return Math.floor(ARTIFACT_CHEST_BASE_COST * Math.pow(ARTIFACT_CHEST_COST_MULT, state.game.artifactChestOpened));
 }
 
+function rollRarity(guaranteeEpic = false, guaranteeLegendary = false) {
+  if (guaranteeLegendary) return 'legendary';
+  if (guaranteeEpic) return Math.random() < 0.2 ? 'legendary' : 'epic';
+
+  const total = Object.values(ARTIFACT_RARITY).reduce((sum, r) => sum + r.weight, 0);
+  let roll = Math.random() * total;
+  for (const [key, cfg] of Object.entries(ARTIFACT_RARITY)) {
+    roll -= cfg.weight;
+    if (roll <= 0) return key;
+  }
+  return 'common';
+}
+
 function randomArtifactChoices(count = 3) {
   const pool = [...ARTIFACT_POOL];
   const result = [];
+
+  const guaranteeLegendary = state.game.artifactPityLegendary >= ARTIFACT_PITY_LEGENDARY_AFTER;
+  const guaranteeEpic = !guaranteeLegendary && state.game.artifactPityEpic >= ARTIFACT_PITY_EPIC_AFTER;
+
   for (let i = 0; i < count && pool.length > 0; i++) {
     const pickIndex = Math.floor(Math.random() * pool.length);
-    result.push(pool.splice(pickIndex, 1)[0]);
+    const base = pool.splice(pickIndex, 1)[0];
+    const rarity = rollRarity(i === 0 && guaranteeEpic, i === 0 && guaranteeLegendary);
+    const rarityMeta = ARTIFACT_RARITY[rarity];
+    result.push({ ...base, rarity, rarityLabel: rarityMeta.label, levelGain: rarityMeta.levelGain });
   }
   return result;
 }
@@ -149,7 +171,8 @@ function openArtifactChest() {
   state.game.gold -= cost;
   state.game.artifactChestOpened += 1;
   chestChoices = randomArtifactChoices(3);
-  renderArtifactChoices(chestChoices, pickArtifact);
+  const pityText = `保底：史詩 ${Math.max(0, ARTIFACT_PITY_EPIC_AFTER - state.game.artifactPityEpic)} 抽內｜傳說 ${Math.max(0, ARTIFACT_PITY_LEGENDARY_AFTER - state.game.artifactPityLegendary)} 抽內`;
+  renderArtifactChoices(chestChoices, pityText, pickArtifact);
   refreshUI();
   save();
 }
@@ -158,12 +181,25 @@ function pickArtifact(artifactId) {
   const artifact = chestChoices.find(a => a.id === artifactId);
   if (!artifact) return;
 
-  state.game.artifacts[artifact.id] = (state.game.artifacts[artifact.id] || 0) + 1;
+  const gain = artifact.levelGain || 1;
+  state.game.artifacts[artifact.id] = (state.game.artifacts[artifact.id] || 0) + gain;
+
+  if (artifact.rarity === 'legendary') {
+    state.game.artifactPityLegendary = 0;
+    state.game.artifactPityEpic = 0;
+  } else if (artifact.rarity === 'epic') {
+    state.game.artifactPityLegendary += 1;
+    state.game.artifactPityEpic = 0;
+  } else {
+    state.game.artifactPityLegendary += 1;
+    state.game.artifactPityEpic += 1;
+  }
+
   chestChoices = [];
   hideArtifactChoices();
   recalcStats(state);
   refreshUI();
-  showToast(`✨ ${artifact.name} 升到 Lv.${state.game.artifacts[artifact.id]}`);
+  showToast(`${artifact.icon} ${artifact.rarityLabel} ${artifact.name} +${gain} Lv`);
   save();
 }
 
@@ -295,6 +331,8 @@ function prestige() {
   state.game.highestClearedBossStage = 0;
   state.game.artifacts = {};
   state.game.artifactChestOpened = 0;
+  state.game.artifactPityEpic = 0;
+  state.game.artifactPityLegendary = 0;
   chestChoices = [];
   hideArtifactChoices();
   state.game.bossChallenge.active = false;

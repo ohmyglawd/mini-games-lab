@@ -12,6 +12,8 @@ export function createInitialState() {
       highestClearedBossStage: 0,
       artifacts: {},
       artifactChestOpened: 0,
+      artifactPityEpic: 0,
+      artifactPityLegendary: 0,
       bossChallenge: {
         active: false,
         stage: 0,

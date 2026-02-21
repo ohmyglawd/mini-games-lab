@@ -19,6 +19,8 @@ export function saveSnapshot(state) {
     highestClearedBossStage: state.game.highestClearedBossStage || 0,
     artifacts: state.game.artifacts || {},
     artifactChestOpened: state.game.artifactChestOpened || 0,
+    artifactPityEpic: state.game.artifactPityEpic || 0,
+    artifactPityLegendary: state.game.artifactPityLegendary || 0,
     lastSaveTime: Date.now(),
     heroesLevels: state.heroes.map(h => h.count),
   };

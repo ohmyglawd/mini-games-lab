@@ -1,4 +1,4 @@
-import { ACTIVE_SKILLS, KILLS_REQUIRED, MONSTER_NAMES, SOUL_BONUS_PER_SOUL } from './config.js';
+import { ACTIVE_SKILLS, ARTIFACT_POOL, KILLS_REQUIRED, MONSTER_NAMES, SOUL_BONUS_PER_SOUL } from './config.js';
 import { formatNumber, getHeroCost, timeTextFromSeconds } from './utils.js';
 import { isWaitingBoss, makeBossRequiredDamage, nextBossStage } from './gameEngine.js';
 
@@ -121,12 +121,14 @@ export function renderActiveSkills(state, skillCooldowns, onCastSkill) {
 
 export function renderArtifacts(state, chestCost, onOpenChest) {
   const wrap = qs('artifact-summary');
-  const btn = qs('btn-artifact-chest');
-  const costEl = qs('ui-artifact-cost');
-  if (!wrap || !btn || !costEl) return;
+  const btn = qs('btn-artifact-chest-top');
+  const costEl = qs('ui-artifact-cost-top');
+  const dot = qs('ui-artifact-red-dot');
+  if (!wrap || !btn || !costEl || !dot) return;
 
   costEl.innerText = formatNumber(chestCost);
   btn.classList.toggle('opacity-50', state.game.gold < chestCost);
+  dot.classList.toggle('hidden', state.game.gold < chestCost);
   btn.onclick = onOpenChest;
 
   const list = Object.entries(state.game.artifacts || {})
@@ -136,19 +138,21 @@ export function renderArtifacts(state, chestCost, onOpenChest) {
       return `${meta?.icon || '✨'}${meta?.name || id} Lv.${lv}`;
     });
 
-  wrap.innerText = list.length > 0 ? list.join(' · ') : '尚無神器';
+  wrap.innerText = list.length > 0 ? `神器：${list.join(' · ')}` : '神器：尚無';
 }
 
-export function renderArtifactChoices(choices, onPick) {
+export function renderArtifactChoices(choices, pityText, onPick) {
   const modal = qs('artifact-modal');
   const list = qs('artifact-choices');
-  if (!modal || !list) return;
+  const pityEl = qs('artifact-pity-text');
+  if (!modal || !list || !pityEl) return;
 
+  pityEl.innerText = pityText;
   list.innerHTML = '';
   choices.forEach((artifact) => {
     const btn = document.createElement('button');
-    btn.className = 'artifact-choice-btn';
-    btn.innerHTML = `<div class="text-2xl">${artifact.icon}</div><div class="font-bold text-sm">${artifact.name}</div><div class="text-[11px] text-gray-300">${artifact.desc}</div>`;
+    btn.className = `artifact-choice-btn rarity-${artifact.rarity}`;
+    btn.innerHTML = `<div class="text-2xl">${artifact.icon}</div><div class="font-bold text-sm">[${artifact.rarityLabel}] ${artifact.name} <span class="text-xs">+${artifact.levelGain}Lv</span></div><div class="text-[11px] text-gray-300">${artifact.desc}</div>`;
     btn.addEventListener('click', () => onPick(artifact.id));
     list.appendChild(btn);
   });
